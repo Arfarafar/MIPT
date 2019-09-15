@@ -20,6 +20,9 @@
 
 int SolveLinear(double a, double b, double *x1)
 {
+    assert (isfinite (a));
+    assert (isfinite (b));
+    assert (x1 != NULL);
     if (a == 0) {
         if (b==0) return SS_INF;
         return 0;

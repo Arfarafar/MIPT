@@ -62,7 +62,7 @@ int SolveSquare(double a, double b, double c, double *x1, double *x2)
     if (d < 0) return 0;
     if (d == 0){
         *x1= -b / 2 / a;
-                return 1;
+        return 1;
     }
     *x1 = (-b - sqrt(d))/2/a;
     *x2 = (-b + sqrt(d))/2/a;
@@ -87,7 +87,7 @@ void print(int nRoot, double x1, double x2)
     }
 }
 
-double*  InputNumberSt(const char promt[], int amount )
+double*  InputNumberSt(const char promt[], int amount )//fixed memory for array
 {
     static double data[100] = {0};
     char c;
@@ -106,9 +106,9 @@ double*  InputNumberSt(const char promt[], int amount )
     return data;
 }
 
-double* InputNumberAuto( int amount )
+double* InputNumberAuto( int amount ) //dinamic memory
 {
-   double *data = (double*)calloc(amount, sizeof(data[0]));
+    double *data = (double*)calloc(amount, sizeof(data[0]));
 
     for (int i = 0; i < amount; i++)
     {
@@ -121,11 +121,11 @@ double* InputNumberAuto( int amount )
 
 char Compare(int nRoot, double x1, double x2, double a, double b, double c)
 {
-    double e = 0.01;
+    double e = 0.01; //inaccuracy
     char ch = 1;
     switch ( nRoot ) {
         case 2: if (fabs(a*x2*x2+b*x2+c) > e)
-                    ch = 0;
+                ch = 0;
         case 1:if (fabs(a*x1*x1+b*x1+c) > e)
                 ch = 0;
             break;
@@ -133,10 +133,10 @@ char Compare(int nRoot, double x1, double x2, double a, double b, double c)
                 ch=0;
             break;
         case 0: if (!isnan(x1) || !isnan(x2))
-            ch = 0;
+                ch = 0;
             break;
         default: printf ("main(): ERROR: nRoots = %d\n", nRoot);
-        ch = 0;
+            ch = 0;
             break;
     }
     return ch;
@@ -150,14 +150,16 @@ char Utest(void)
     int amount = 3 ;
     for (int i =0; i<100; i++) {
         double *coeff = InputNumberAuto(amount);
-        a= 500; //*coeff;
-        b =  169.0000000000000000000000000000000001; //*(coeff+1);
-        c = 724; //*(coeff+2);
+        a= *coeff;
+        b =*(coeff+1);
+        c =*(coeff+2);
         int nRoot = SolveSquare(a, b, c, &x1, &x2);
         if (!Compare(nRoot, x1, x2, a, b, c)) {
             printf(" nRoot %d Coeffs were %lg %lf %lg roots: %lg %lg error", nRoot, a,b,c,x1,x2);
             return 1;
         }
+        x1=NAN;
+        x2=NAN;
         free(coeff);
     }
     return 0;

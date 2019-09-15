@@ -4,22 +4,19 @@
 #include <stdlib.h>
 
 #define SS_INF -100
+
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//! Solves a square equation ax2 + bx + c = 0
+//! Solves a equation bx + c = 0
 //!
 //! @param [in] a a ‐coefficient
-//! @param [in] b b‐coefficient
-//! @param [in] c c ‐coefficient
-//! @param [out] x1 Pointer to the 1st root
-//! @param [out] x2 Pointer to the 2nd root
+//! @param [in] b b ‐coefficient
+//! @param [out] x1 Pointer to the  root
 //!
 //! @return Number of roots
 //!
 //! @note In case of infinite number of roots,
-//! returns SS_INF_ROOTS.
+//! returns SS_INF.
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-
-
 
 int SolveLinear(double a, double b, double *x1)
 {
@@ -34,6 +31,22 @@ int SolveLinear(double a, double b, double *x1)
     *x1 = -b / a;
     return 1;
 }
+
+
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//! Solves a square equation ax2 + bx + c = 0
+//!
+//! @param [in] a a ‐coefficient
+//! @param [in] b b ‐coefficient
+//! @param [in] c c ‐coefficient
+//! @param [out] x1 Pointer to the 1st root
+//! @param [out] x2 Pointer to the 2nd root
+//!
+//! @return Number of roots
+//!
+//! @note In case of infinite number of roots,
+//! returns SS_INF.
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 
 int SolveSquare(double a, double b, double c, double *x1, double *x2)
@@ -69,7 +82,13 @@ int SolveSquare(double a, double b, double c, double *x1, double *x2)
     return 2;
 }
 
-
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//! print all the roots of equation
+//!
+//! @param [in] nRoot ammount of roots
+//! @param [in] x1  1st root
+//! @param [in] x2  2nd root
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 void print(int nRoot, double x1, double x2)
 {
@@ -142,6 +161,11 @@ char Compare(int nRoot, double x1, double x2, double a, double b, double c)
     return ch;
 }
 
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//! TEST 
+//! return 0 if all is ok
+//! return 1 if isnt
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 char Utest(void)
 {

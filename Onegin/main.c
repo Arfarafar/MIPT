@@ -5,9 +5,11 @@
 
 void sortByend(int stcount, struct string* index);
 void sortBystart(int stcount, struct string* index);
-void fprint1(struct string* index , int stcount);
 void fprint(struct string* index, int, FILE* fl );
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index);
+bool CompareB(struct string index1, struct string index2);
+bool ComparEnd(struct string index1, struct string index2);
+void swap(struct string *a, struct string *b);
 struct string{
     char *str;
     int len;
@@ -42,13 +44,13 @@ int main(void) {
 }
 
 
-//!*
-//! * param[in] buf -  buffer
-//! * param[in] flin -  input file
-//! * param[out] stcount - amount of strings  if file
-//! * param[out] index - string address
-//!*
-//! */
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  param[in] buf -  buffer
+//!  param[in] flin -  input file
+//!  param[out] stcount - amount of strings  if file
+//!  param[out] index - string address
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 void fprint(struct string* index , int stcount, FILE* flout)
 {

@@ -42,13 +42,13 @@ int main(void) {
 }
 
 
-/*
- * param[in] buf -  buffer
- * param[in] flin -  input file
- * param[out] stcount - amount of strings  if file
- * param[out] index - string address
- *
- */
+//!*
+//! * param[in] buf -  buffer
+//! * param[in] flin -  input file
+//! * param[out] stcount - amount of strings  if file
+//! * param[out] index - string address
+//!*
+//! */
 
 void fprint(struct string* index , int stcount, FILE* flout)
 {

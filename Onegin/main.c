@@ -102,7 +102,7 @@ void fprint(struct string* index , int stcount, FILE* flout)
      assert(*index != 0);
      assert(stcount != 0);
      assert(flin != 0);
-    
+
     fseek(flin, 0, SEEK_END);
     int ftel = ftell(flin);
     *buf = (char *) calloc(ftel + 2, sizeof(char)) +1; // ftel+2 because of element in front of,  1 behind
@@ -113,12 +113,12 @@ void fprint(struct string* index , int stcount, FILE* flout)
 
     for (int i = 0; i < ftel; i++) {
 
-        if (((*buf)[i] == '\n' || (*buf)[i] == '\0') ) { 
+        if (((*buf)[i] == '\n' || (*buf)[i] == '\0') ) {
 
             *((*buf) + i) = '\0';
             (*stcount)++;
         }
-      
+
     }
     *((*buf)+ ftel) = '\0'; // \0 in last char
      *((*buf) -1) = '\0'; // \0 in first char
@@ -131,12 +131,12 @@ void fprint(struct string* index , int stcount, FILE* flout)
         if (*(*buf + i) == '\0') {
             (*index)[++(*stcount)].str = (*buf) + i + 1;
             (*index)[(*stcount) - 1].len =  (*index)[*stcount].str -  (*index)[*stcount - 1].str;
-         
+
         }
     }
 
      (*index)[*stcount].len = *buf + ftel -  (*index)[*stcount].str + 1;//last line
-   
+
 }
 
 
@@ -245,12 +245,12 @@ void swap(struct string *a, struct string *b){
 //!  @param[in]  stcount - amount of strings to divide
 //!  @param[out] index - pointer on first structure string
 //!
-//!  @returns r - all elements with position  > r are >= index[r] , all positions < r are < index[r]
+//!  @returns r - all elements with position  > r are >= index[base] , all positions < r are < index[base]
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 int divide(int stcount,struct string* index){
     assert(index != 0);
-    assert(stcount == 0);
+    assert(stcount == -1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;
@@ -298,14 +298,14 @@ void sortBystart(int stcount, struct string* index)
 
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//!  Compare index1.str vs index2.str
-//!  
+//!  Compare index1.str vs index2.str 
+//!
 //!  @Starting with end of the line
 //!
 //!
 //!  @param[in] index1 - structure string
 //!  @param[in] index2 - structure string
-//! 
+//!
 //!  @returns 1 if first >= second
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
@@ -385,12 +385,12 @@ bool ComparEnd(struct string index1, struct string index2) {
 //!  @param[in]  stcount - amount of strings to divide
 //!  @param[out] index - pointer on first structure string
 //!
-//!  @returns r - all elements with position  > r are >= index[r] , all positions < r are < index[r]
+//!  @returns r - all elements with position  > r are >= index[base] , all positions < r are < index[base]
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 int dividEnd(int stcount,struct string* index){
     assert(index != 0);
-    assert(stcount == 0);
+    assert(stcount == -1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;

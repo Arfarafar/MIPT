@@ -59,9 +59,9 @@ int main(void) {
 //!  prints all index.str one by one
 //!
 //!  
-//!  param[in] flout -  output file
-//!  param[in] *stcount - amount of strings  in file
-//!  param[out] *index[] - array of structures string
+//!  @param[in] flout - pointer on output file
+//!  @param[in] stcount - amount of strings  in file
+//!  @param[out] index - pointer on array of struct string
 //!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
@@ -79,10 +79,10 @@ void fprint(struct string* index , int stcount, FILE* flout)
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 //!  fills in the index array with beginnings of the strings' address and length and buf array with chars from file, 
 //!
-//!  param[out] *buf[] -  buffer array of chars
-//!  param[in] flin -  input file
-//!  param[out] *stcount - amount of strings  in file
-//!  param[out] *index[] - array of structures string
+//!  @param[out] buf -  pointer on pointer on buffer array of chars
+//!  @param[in]  flin -  pointer on input file
+//!  @param[out] stcount - pointer on amount of strings  in file
+//!  @param[out] index - pointer on pointer on array of structures string
 //!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
            
@@ -126,13 +126,13 @@ void fprint(struct string* index , int stcount, FILE* flout)
            
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 //!  Compare index1.str vs index2.str 
-//!  returns 1 if first >= second
 //!  Starting with begin of the line
 //!  
 //! 
-//!  param[in] index1 - structure string
-//!  param[in] index2 - structure string
-//!
+//!  @param[in] index1 - structure string
+//!  @param[in] index2 - structure string
+//! 
+//!  @returns 1 if first >= second
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐           
 
 bool CompareB(struct string index1, struct string index2) {
@@ -195,8 +195,8 @@ bool CompareB(struct string index1, struct string index2) {
 //!  swap the elements 
 //!
 //!  
-//!  param[out] a  - structure string
-//!  param[out] b  - structure string
+//!  @param[out] a  - structure string
+//!  @param[out] b  - structure string
 //!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐        
 
@@ -212,6 +212,18 @@ void swap(struct string *a, struct string *b){
 
 
  }
+
+           
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  Compare index1.str vs index2.str 
+//!  Starting with begin of the line
+//!  
+//! 
+//!  @param[in]  stcount - amount of strings to divide
+//!  @param[out] index - pointer on first structure string 
+//! 
+//!  @returns r 
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐   
 
 int divide(int stcount,struct string* index){
    // printf("%d \n", index[0].len);

@@ -30,7 +30,7 @@ int main(void) {
 
     char floutName[] = "sorted.txt"; //sorted.txt
     FILE *flin;
-    if ((flin = fopen("../oneginrus.txt", "r" )) == NULL) {
+    if ((flin = fopen("../on.txt", "r" )) == NULL) {
         perror("fopen");
              printf("%s","cant open this file!") ;
         return 1;
@@ -48,7 +48,7 @@ int main(void) {
     indexFill(&buf,flin,&stcount, &index ); // creates massive of struct string
 
     printf("Would you like to sort by beginings of the lines? (Y/N) \n");
-    char c;
+    char c='Y';
     scanf ("%c",&c);
     if (c =='Y') {
        sortBystart( stcount, index );
@@ -250,7 +250,7 @@ void swap(struct string *a, struct string *b){
 
 int divide(int stcount,struct string* index){
     assert(index != 0);
-    assert(stcount == -1);
+    assert(stcount != -1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;
@@ -278,7 +278,7 @@ int divide(int stcount,struct string* index){
 }
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//!  sorts struct array with Tony hoar quick sort
+//!  sorts struct array with Tony Hoar quick sort
 //!
 //!
 //!  @param[in] stcount - amount of strings  in file started with 0;
@@ -298,7 +298,7 @@ void sortBystart(int stcount, struct string* index)
 
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//!  Compare index1.str vs index2.str 
+//!  Compare index1.str vs index2.str
 //!
 //!  @Starting with end of the line
 //!
@@ -390,7 +390,7 @@ bool ComparEnd(struct string index1, struct string index2) {
 
 int dividEnd(int stcount,struct string* index){
     assert(index != 0);
-    assert(stcount == -1);
+    if (stcount != -1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;

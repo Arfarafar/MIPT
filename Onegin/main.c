@@ -125,12 +125,13 @@ void fprint(struct string* index , int stcount, FILE* flout)
 
            
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//!  prints all index.str one by one
-//!
+//!  Compare index1.str vs index2.str 
+//!  returns 1 if first >= second
+//!  Starting with begin of the line
 //!  
-//!  param[in] flout -  output file
-//!  param[in] *stcount - amount of strings  in file
-//!  param[out] *index[] - array of structures string
+//! 
+//!  param[in] index1 - structure string
+//!  param[in] index2 - structure string
 //!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐           
 
@@ -261,6 +262,17 @@ void sortBystart(int stcount, struct string* index)
         sortBystart(stcount-k,index+k);
 }
 
+          
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  Compare index1.str vs index2.str 
+//!  returns 1 if first >= second
+//!  Starting with end of the line
+//!  
+//! 
+//!  param[in] index1 - structure string
+//!  param[in] index2 - structure string
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 bool ComparEnd(struct string index1, struct string index2) {
     // int m = min(index1.len,index2.len);

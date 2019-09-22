@@ -4,12 +4,19 @@
 #include <windows.h>
 
 void sortByend(int stcount, struct string* index);
+
 void sortBystart(int stcount, struct string* index);
+
 void fprint(struct string* index, int, FILE* fl );
+
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index);
+
 bool CompareB(struct string index1, struct string index2);
+
 bool ComparEnd(struct string index1, struct string index2);
+
 void swap(struct string *a, struct string *b);
+
 struct string{
     char *str;
     int len;
@@ -18,7 +25,6 @@ struct string{
 int main(void) {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
-    //char flinName[] = "onegin.txt"; //onegin.txt
 
     char floutName[] = "sorted.txt"; //sorted.txt
     FILE *flin;
@@ -32,25 +38,33 @@ int main(void) {
     int stcount=0; // starts counting with 0, if stcount = 2 it means 3 strings
     char *buf;
     struct string* index;
-
-    indexFill(&buf,flin,&stcount, &index );
-    //printf("%d",stcount);
-   // printf("%d \n", index[0].len);
-   //sortBystart( stcount, index );
-   //fprint(index, stcount, flout);
-   sortByend (stcount, index);
-   fprint(index, stcount, flout);
+    indexFill(&buf,flin,&stcount, &index ); // creates massive of struct string
+    
+    printf("Would you like to sort by beginings of the lines? (Y/N) \n";
+    char c;
+    scanf ("%c",&c);
+    if (c =='Y') {
+       sortBystart( stcount, index );
+       fprint(index, stcount, flout);
+    }
+    else {
+       sortByend (stcount, index);
+       fprint(index, stcount, flout);
+    }
     return 0;
 }
 
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//!  param[in] buf -  buffer
-//!  param[in] flin -  input file
-//!  param[out] stcount - amount of strings  if file
-//!  param[out] index - string address
+//!  prints all index.str one by one
+//!
+//!  
+//!  param[in] flout -  output file
+//!  param[in] *stcount - amount of strings  in file
+//!  param[out] *index[] - array of structures string
 //!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+
 
 void fprint(struct string* index , int stcount, FILE* flout)
 {
@@ -61,6 +75,17 @@ void fprint(struct string* index , int stcount, FILE* flout)
     }
 }
 
+           
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  fills in the index array with beginnings of the strings' address and length and buf array with chars from file, 
+//!
+//!  param[out] *buf[] -  buffer array of chars
+//!  param[in] flin -  input file
+//!  param[out] *stcount - amount of strings  in file
+//!  param[out] *index[] - array of structures string
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+           
  void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
     fseek(flin, 0, SEEK_END);
     int ftel = ftell(flin);
@@ -98,6 +123,16 @@ void fprint(struct string* index , int stcount, FILE* flout)
    //  printf("%d \n",  (*index)[(*stcount) ].len);
 }
 
+           
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  prints all index.str one by one
+//!
+//!  
+//!  param[in] flout -  output file
+//!  param[in] *stcount - amount of strings  in file
+//!  param[out] *index[] - array of structures string
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐           
 
 bool CompareB(struct string index1, struct string index2) {
     // int m = min(index1.len,index2.len);
@@ -154,6 +189,15 @@ bool CompareB(struct string index1, struct string index2) {
         j++;
     }
 }
+           
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  swap the elements 
+//!
+//!  
+//!  param[out] a  - structure string
+//!  param[out] b  - structure string
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐        
 
 void swap(struct string *a, struct string *b){
      int k;
@@ -198,7 +242,14 @@ int divide(int stcount,struct string* index){
  }
 
 
-
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  sorts struct array with Tony hoar quick sort
+//!
+//!  
+//!  param[in] stcount - amount of strings  in file started with 0;
+//!  param[out] index[]  - array of structures string
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐        
 
 void sortBystart(int stcount, struct string* index)
 {
@@ -306,6 +357,14 @@ int dividEnd(int stcount,struct string* index){
     }
 }
 
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  sorts struct array with Tony hoar quick sort
+//!
+//!  
+//!  param[in] stcount - amount of strings  in file started with 0;
+//!  param[out] index[]  - array of structures string
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐           
 void sortByend(int stcount, struct string* index)
 {
     // printf("%d \n", index[0].len);

@@ -32,7 +32,7 @@ int main(void) {
     FILE *flin;
     if ((flin = fopen("../on.txt", "r" )) == NULL) {
         perror("fopen");
-             printf("%s","cant open this file!") ;
+        printf("%s","cant open this file!") ;
         return 1;
     }
     FILE *flout;
@@ -51,13 +51,17 @@ int main(void) {
     char c='Y';
     scanf ("%c",&c);
     if (c =='Y') {
-       sortBystart( stcount, index );
-       fprint(index, stcount, flout);
+        sortBystart( stcount, index );
+        fprint(index, stcount, flout);
     }
     else {
-       sortByend (stcount, index);
-       fprint(index, stcount, flout);
+        sortByend (stcount, index);
+        fprint(index, stcount, flout);
     }
+    fclose(flin);
+    fclose(flout);
+    free(buf-1); // cause 1 symbol was before the pointer
+    free(index);
     printf("Done \n");
     return 0;
 }
@@ -95,13 +99,13 @@ void fprint(struct string* index , int stcount, FILE* flout)
 //!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
- void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
-     assert(buf != 0);
-     assert(*buf != 0);
-     assert(index != 0);
-     assert(*index != 0);
-     assert(stcount != 0);
-     assert(flin != 0);
+void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
+    assert(buf != 0);
+    assert(*buf != 0);
+    assert(index != 0);
+    assert(*index != 0);
+    assert(stcount != 0);
+    assert(flin != 0);
 
     fseek(flin, 0, SEEK_END);
     int ftel = ftell(flin);
@@ -121,10 +125,10 @@ void fprint(struct string* index , int stcount, FILE* flout)
 
     }
     *((*buf)+ ftel) = '\0'; // \0 in last char
-     *((*buf) -1) = '\0'; // \0 in first char
-     (*stcount)++;
+    *((*buf) -1) = '\0'; // \0 in first char
+    (*stcount)++;
     *index = (struct string *) calloc(*stcount, sizeof(struct string));
-     (*index)[0].str =(*buf);
+    (*index)[0].str =(*buf);
     *stcount = 0;
 
     for (int i = 0; i < ftel; i++) {// fills index
@@ -135,7 +139,7 @@ void fprint(struct string* index , int stcount, FILE* flout)
         }
     }
 
-     (*index)[*stcount].len = *buf + ftel -  (*index)[*stcount].str + 1;//last line
+    (*index)[*stcount].len = *buf + ftel -  (*index)[*stcount].str + 1;//last line
 
 }
 
@@ -224,17 +228,17 @@ bool CompareB(struct string index1, struct string index2) {
 void swap(struct string *a, struct string *b){
     assert(a != 0);
     assert(b != 0);
-     int k;
-     char *c;
-     k = (*a).len;
-     c = (*a).str;
+    int k;
+    char *c;
+    k = (*a).len;
+    c = (*a).str;
     (*a).len = (*b).len;
     (*a).str =(*b).str;
     (*b).len = k;
     (*b).str = c;
 
 
- }
+}
 
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
@@ -288,12 +292,12 @@ int divide(int stcount,struct string* index){
 
 void sortBystart(int stcount, struct string* index)
 {
-        assert(index != 0);
-        if ( stcount == 0 || stcount == -1)
-            return;
-        int k = divide(stcount,index);
-        sortBystart(k-1,index);
-        sortBystart(stcount-k,index+k);
+    assert(index != 0);
+    if ( stcount == 0 || stcount == -1)
+        return;
+    int k = divide(stcount,index);
+    sortBystart(k-1,index);
+    sortBystart(stcount-k,index+k);
 }
 
 

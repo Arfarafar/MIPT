@@ -30,7 +30,7 @@ int main(void) {
 
     char floutName[] = "sorted.txt"; //sorted.txt
     FILE *flin;
-    if ((flin = fopen("../on.txt", "r" )) == NULL) {
+    if ((flin = fopen("../oneginrus.txt", "r" )) == NULL) {
         perror("fopen");
         printf("%s","cant open this file!") ;
         return 1;

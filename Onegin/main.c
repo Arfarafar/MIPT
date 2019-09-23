@@ -3,7 +3,10 @@
 #include <sys\stat.h>
 #include <assert.h>
 #include <windows.h>
+#include <io.h>
 
+
+int StrCount(char **buf,int ftel);
 
 void sortByend(int stcount, struct string* index);
 
@@ -88,6 +91,26 @@ void fprint(struct string* index , int stcount, FILE* flout)
     }
 }
 
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  Count strings
+//!
+//!  @param[in] buf -  pointer on pointer on buffer array of chars
+//!  @param[in] ftel - bufsize
+//!
+//! @return strings count;
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+
+int StrCount(char **buf,int ftel)
+{
+    assert(**buf != 0);
+    assert(*buf != 0);
+    int i = 0;
+    for (char* s = (char*)memchr(*buf,'\n',ftel); s; s = (char*)memchr(s+1,'\n',ftel - (s-*buf))) {
+        (i)++;
+    }
+    return i;
+}
+
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 //!  fills in the index array with beginnings of the strings' address and length and buf array with chars from file,
@@ -102,7 +125,7 @@ void fprint(struct string* index , int stcount, FILE* flout)
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
     assert(buf != 0);
     assert(*buf != 0);
-    assert(index != 0);
+    assert(index);
     assert(*index != 0);
     assert(stcount != 0);
     assert(flin != 0);
@@ -112,32 +135,25 @@ void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
     *buf = (char *) calloc(ftel + 2, sizeof(char)) +1; // ftel+2 because of element in front of,  1 behind
     fseek(flin, 0, SEEK_SET);
     ftel=fread(*buf, 1, ftel, flin);
+   // ftel = read(flin,*buf,ftel);
     realloc(*buf,ftel);
-    fseek(flin, 0, SEEK_SET);
+    //fseek(flin, 0, SEEK_SET);
+    *stcount = StrCount(buf,ftel);
 
-    for (int i = 0; i < ftel; i++) {
 
-        if (((*buf)[i] == '\n' || (*buf)[i] == '\0') ) {
-
-            *((*buf) + i) = '\0';
-            (*stcount)++;
-        }
-
-    }
-    *((*buf)+ ftel) = '\0'; // \0 in last char
+    *((*buf)+ ftel) = '\n';
     *((*buf) -1) = '\0'; // \0 in first char
     (*stcount)++;
     *index = (struct string *) calloc(*stcount, sizeof(struct string));
     (*index)[0].str =(*buf);
     *stcount = 0;
 
-    for (int i = 0; i < ftel; i++) {// fills index
-        if (*(*buf + i) == '\0') {
-            (*index)[++(*stcount)].str = (*buf) + i + 1;
+    for (char* s = (char*)memchr(*buf,'\n',ftel); s; s = (char*)memchr(s+1,'\n',ftel - (s-*buf)-1)) {// fills index
+            (*index)[++(*stcount)].str = s + 1;
             (*index)[(*stcount) - 1].len =  (*index)[*stcount].str -  (*index)[*stcount - 1].str;
-
-        }
+            *s = '\0';
     }
+
 
     (*index)[*stcount].len = *buf + ftel -  (*index)[*stcount].str + 1;//last line
 
@@ -196,20 +212,12 @@ bool CompareB(struct string index1, struct string index2) {
         char c1 = *(index1.str+i), c2 = *(index2.str+j);
 
         if ((c1 == '\0') || c2 =='\0'){
-            if ((c1 == '\0') && c2 > '\0')
-                return 0;
-            else
-                return 1;
-
+            return (c1 == '\0') && c2 > '\0' ? 0 : 1;
         }
         if ((c1 == c2)) {
 
         } else {
-
-            if (c1 >= c2)
-                return 1;
-            return 0;
-
+            return (c1>=c2) ? 1 : 0;
         }
         i++;
         j++;
@@ -394,7 +402,7 @@ bool ComparEnd(struct string index1, struct string index2) {
 
 int dividEnd(int stcount,struct string* index){
     assert(index != 0);
-    if (stcount != -1);
+    assert (stcount != -1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;

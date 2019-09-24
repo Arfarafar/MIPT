@@ -35,13 +35,13 @@ int main(void) {
     FILE *flin;
     if ((flin = fopen("../oneginrus.txt", "r" )) == NULL) {
         perror("fopen");
-        printf("%s","cant open this file!") ;
+        printf("cant open this file!") ;
         return 1;
     }
     FILE *flout;
     if ((flout = fopen(floutName, "w" )) == NULL) {
         perror("fopen");
-        printf("%s","cant open this file!") ;
+        printf("cant open this file!") ;
         return 1;
     }
 
@@ -83,7 +83,8 @@ int main(void) {
 
 void fprint(struct string* index , int stcount, FILE* flout)
 {
-    assert(flout != 0);
+    assert(flout);
+    assert(index);
     for (int i = 0; i<= stcount; i++)
     {
         fputs(index[i].str,flout);
@@ -102,8 +103,8 @@ void fprint(struct string* index , int stcount, FILE* flout)
 
 int StrCount(char **buf,int ftel)
 {
-    assert(**buf != 0);
-    assert(*buf != 0);
+    assert(**buf);
+    assert(*buf);
     int i = 0;
     for (char* s = (char*)memchr(*buf,'\n',ftel); s; s = (char*)memchr(s+1,'\n',ftel - (s-*buf))) {
         (i)++;
@@ -123,12 +124,12 @@ int StrCount(char **buf,int ftel)
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
-    assert(buf != 0);
-    assert(*buf != 0);
+    assert(buf);
+    assert(*buf);
     assert(index);
-    assert(*index != 0);
-    assert(stcount != 0);
-    assert(flin != 0);
+    assert(*index);
+    assert(stcount);
+    assert(flin);
 
     fseek(flin, 0, SEEK_END);
     int ftel = ftell(flin);
@@ -172,8 +173,8 @@ void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 bool CompareB(struct string index1, struct string index2) {
-    assert(index1.str != 0);
-    assert(index2.str != 0);
+    assert(index1.str);
+    assert(index2.str);
     int i = 0, j = 0;
     while (true) {
         switch (*((index1.str + i))) {
@@ -209,7 +210,7 @@ bool CompareB(struct string index1, struct string index2) {
             default:
                 break;
         }
-        char c1 = *(index1.str+i), c2 = *(index2.str+j);
+        char c1 = *(index1.str+i++), c2 = *(index2.str+j++);
 
         if ((c1 == '\0') || c2 =='\0'){
             return (c1 == '\0') && c2 > '\0' ? 0 : 1;
@@ -219,8 +220,6 @@ bool CompareB(struct string index1, struct string index2) {
         } else {
             return (c1>=c2) ? 1 : 0;
         }
-        i++;
-        j++;
     }
 }
 
@@ -234,8 +233,8 @@ bool CompareB(struct string index1, struct string index2) {
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 void swap(struct string *a, struct string *b){
-    assert(a != 0);
-    assert(b != 0);
+    assert(a);
+    assert(b);
     int k;
     char *c;
     k = (*a).len;
@@ -261,8 +260,8 @@ void swap(struct string *a, struct string *b){
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 int divide(int stcount,struct string* index){
-    assert(index != 0);
-    assert(stcount != -1);
+    assert(index);
+    assert(stcount+1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;
@@ -300,7 +299,7 @@ int divide(int stcount,struct string* index){
 
 void sortBystart(int stcount, struct string* index)
 {
-    assert(index != 0);
+    assert(index);
     if ( stcount == 0 || stcount == -1)
         return;
     int k = divide(stcount,index);
@@ -322,8 +321,8 @@ void sortBystart(int stcount, struct string* index)
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 bool ComparEnd(struct string index1, struct string index2) {
-    assert(index1.str != 0);
-    assert(index2.str != 0);
+    assert(index1.str);
+    assert(index2.str);
     int i = 0, j = 0;
     while (true) {
         switch (*((index1.str +index1.len - i-2))) {
@@ -366,26 +365,16 @@ bool ComparEnd(struct string index1, struct string index2) {
             default:
                 break;
         }
-        char c1 = *(index1.str +index1.len - i-2), c2 = *(index2.str + index2.len - j-2);
+        char c1 = *(index1.str +index1.len - i++ -2), c2 = *(index2.str + index2.len - j++ -2);
 
         if ((c1 == '\0') || c2 =='\0'){
-            if ((c1 == '\0') && c2 > '\0')
-                return 0;
-            else
-                return 1;
-
+            return (c1 == '\0') && c2 > '\0' ? 0 : 1;
         }
         if (c1 == c2) {
 
         } else {
-
-            if (c1 >= c2)
-                return 1;
-            return 0;
-
+            return c1>=c2 ? 1: 0;
         }
-        i++;
-        j++;
     }
 }
 
@@ -401,8 +390,8 @@ bool ComparEnd(struct string index1, struct string index2) {
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 int dividEnd(int stcount,struct string* index){
-    assert(index != 0);
-    assert (stcount != -1);
+    assert(index);
+    assert (stcount+1);
     int base = (stcount) / 2;
     int l = 0;
     int r = stcount;
@@ -412,11 +401,10 @@ int dividEnd(int stcount,struct string* index){
 
         while (!ComparEnd(index[l],c)){ // find element that >= index[base]
             l++;
-
         }
+
         while (r>0 && ComparEnd(index[r], c)){ // find element that < index[base]
             r--;
-
         }
         if (l>=r){
             if (l== 0 && (r == 0)) // it means that base element is smallest one
@@ -439,7 +427,7 @@ int dividEnd(int stcount,struct string* index){
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 void sortByend(int stcount, struct string* index)
 {
-    assert(index != 0);
+    assert(index);
     if ( stcount == 0 || stcount == -1)
         return;
     int k = dividEnd(stcount,index);

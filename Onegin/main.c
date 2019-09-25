@@ -22,7 +22,7 @@ bool ComparEnd(struct string index1, struct string index2);
 
 void swap(struct string *a, struct string *b);
 
-struct string{
+struct string {
     char *str;
     int len;
 };
@@ -32,39 +32,43 @@ int main(void) {
     SetConsoleOutputCP(1251);
 
     char floutName[] = "sorted.txt"; //sorted.txt
-    FILE *flin;
-    if ((flin = fopen("../oneginrus.txt", "r" )) == NULL) {
-        perror("fopen");
-        printf("cant open this file!") ;
+    FILE *flin = fopen("../oneginrus.txt", "r" );
+    if (flin == NULL) {
+        printf("cant open file oneginrus.txt ! ") ;
         return 1;
     }
-    FILE *flout;
-    if ((flout = fopen(floutName, "w" )) == NULL) {
-        perror("fopen");
-        printf("cant open this file!") ;
+    FILE *flout = fopen(floutName, "w" );
+    if (flout == NULL) {
+        printf("cant open %s file!",floutName) ;
         return 1;
     }
 
-    int stcount=0; // starts counting with 0, if stcount = 2 it means 3 strings
-    char *buf;
-    struct string* index;
-    indexFill(&buf,flin,&stcount, &index ); // creates massive of struct string
+    int stcount = 0; // starts counting with 0, if stcount = 2 it means 3 strings
+    char *buf = NULL;
+    struct string* index = NULL;
+    indexFill( &buf, flin, &stcount, &index ); // creates massive of struct string
 
     printf("Would you like to sort by beginings of the lines? (Y/N) \n");
-    char c='Y';
+    char c = 'Y';
     scanf ("%c",&c);
-    if (c =='Y') {
-        sortBystart( stcount, index );
+    if (c == 'Y') {
+        sortBystart(stcount, index);
         fprint(index, stcount, flout);
     }
     else {
         sortByend (stcount, index);
         fprint(index, stcount, flout);
     }
+    printf("\n\n\tUNSORTED FILE\n\n");
+    bufprint(buf);
+    
+    
     fclose(flin);
     fclose(flout);
     free(buf-1); // cause 1 symbol was before the pointer
     free(index);
+    
+    
     printf("Done \n");
     return 0;
 }
@@ -101,13 +105,16 @@ void fprint(struct string* index , int stcount, FILE* flout)
 //! @return strings count;
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
-int StrCount(char **buf,int ftel)
+int StrCount(char **buf,int ftel, char )
 {
     assert(**buf);
     assert(*buf);
     int i = 0;
-    for (char* s = (char*)memchr(*buf,'\n',ftel); s; s = (char*)memchr(s+1,'\n',ftel - (s-*buf))) {
-        (i)++;
+    for (char* s = (char*) memchr(*buf, '\n', ftel); 
+         s; 
+         s = (char*) memchr(s+1, '\n', ftel - (s-*buf))) 
+    {
+        i++;
     }
     return i;
 }
@@ -121,13 +128,12 @@ int StrCount(char **buf,int ftel)
 //!  @param[out] stcount - pointer on amount of strings  in file
 //!  @param[out] index - pointer on pointer on array of structures string
 //!
+//!  
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
     assert(buf);
-    assert(*buf);
     assert(index);
-    assert(*index);
     assert(stcount);
     assert(flin);
 
@@ -136,8 +142,9 @@ void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
     *buf = (char *) calloc(ftel + 2, sizeof(char)) +1; // ftel+2 because of element in front of,  1 behind
     fseek(flin, 0, SEEK_SET);
     ftel=fread(*buf, 1, ftel, flin);
-   // ftel = read(flin,*buf,ftel);
-    realloc(*buf,ftel);
+   // ftel = read(flin,*buf,ftel)
+    ;
+    *buf = realloc(*buf,ftel);
     //fseek(flin, 0, SEEK_SET);
     *stcount = StrCount(buf,ftel);
 

@@ -1,24 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <sys\stat.h>
 #include <assert.h>
 #include <windows.h>
 #include <io.h>
 
 
-int StrCount(char **buf,int ftel);
+int SymbolCount(char **buf,int ftel, char desired);
+
+void bufprint(char* buf, int count, FILE* flout);
 
 void sortByend(int stcount, struct string* index);
 
 void sortBystart(int stcount, struct string* index);
 
+int particionStart(int stcount,struct string* index);
+
+int particionEnd(int stcount,struct string* index);
+
 void fprint(struct string* index, int, FILE* fl );
 
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index);
 
-bool CompareB(struct string index1, struct string index2);
+int CompareB(struct string index1, struct string index2);
 
-bool ComparEnd(struct string index1, struct string index2);
+int ComparEnd(struct string index1, struct string index2);
 
 void swap(struct string *a, struct string *b);
 
@@ -59,16 +66,15 @@ int main(void) {
         sortByend (stcount, index);
         fprint(index, stcount, flout);
     }
-    printf("\n\n\tUNSORTED FILE\n\n");
-    bufprint(buf);
-    
-    
+    bufprint(buf,stcount,flout);
+
+
     fclose(flin);
     fclose(flout);
     free(buf-1); // cause 1 symbol was before the pointer
     free(index);
-    
-    
+
+
     printf("Done \n");
     return 0;
 }
@@ -93,30 +99,85 @@ void fprint(struct string* index , int stcount, FILE* flout)
     {
         fputs(index[i].str,flout);
         putc('\n',flout);
-    }
+}
 }
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
-//!  Count strings
+//!  prints buffer
+//!
+//!
+//!  @param[in] flout - pointer on output file
+//!  @param[in] count - amount of strings  in file
+//!  @param[in] buf - pointer on array of char
+//!
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+
+void bufprint(char* buf, int count, FILE* flout){
+    char* cur = buf;
+    char str[] = "\n\nUNSORTED\n\n";
+    fputs(str,flout);
+      for( int i = 0; i<= count; i++){
+          fputs(cur,flout);
+          putc('\n',flout);
+          cur = (char*) strchr(cur, '\0')+1;
+      }
+}
+
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  Count desired symbols
 //!
 //!  @param[in] buf -  pointer on pointer on buffer array of chars
 //!  @param[in] ftel - bufsize
+//! @param[in] desired - symbol to find
 //!
 //! @return strings count;
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
-int StrCount(char **buf,int ftel, char )
+int SymbolCount(char **buf,int ftel, char desired)
 {
-    assert(**buf);
+    assert(buf);
     assert(*buf);
     int i = 0;
-    for (char* s = (char*) memchr(*buf, '\n', ftel); 
-         s; 
-         s = (char*) memchr(s+1, '\n', ftel - (s-*buf))) 
+    for (char* s = (char*) memchr(*buf, desired, ftel);
+         s;
+         s = (char*) memchr(s+1, desired, ftel - (s-*buf)))
     {
         i++;
     }
     return i;
+}
+
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  File Length
+//!
+//!  @param[in]  flin -  pointer on input file
+//!
+//!  set seek at the begining of file
+//! @return file length
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+
+int File_Length(FILE * flin){
+    fseek(flin, 0, SEEK_END);
+    int ftel = ftell(flin);
+    fseek(flin, 0, SEEK_SET);
+    return ftel;
+}
+
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+//!  creates buffer and return it length;
+//!
+//!  @param[out] buf -  pointer on pointer on char (buffer array of chars)
+//!  @param[in]  ftel - file length
+//!  @param[in]  flin -  pointer on input file
+//!
+//! @return buf length
+//‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
+
+int Createbuf(char** buf, int ftel, FILE* flin){
+    *buf = (char *) calloc(ftel + 2, sizeof(char)) +1; // ftel+2 because of element in front of,  1 behind
+    ftel=fread(*buf, 1, ftel, flin);
+    *buf =(char*) realloc(*buf-1,ftel+2)+1;
+    return ftel;
 }
 
 
@@ -128,7 +189,7 @@ int StrCount(char **buf,int ftel, char )
 //!  @param[out] stcount - pointer on amount of strings  in file
 //!  @param[out] index - pointer on pointer on array of structures string
 //!
-//!  
+//!
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
 void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
@@ -137,34 +198,56 @@ void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
     assert(stcount);
     assert(flin);
 
-    fseek(flin, 0, SEEK_END);
-    int ftel = ftell(flin);
-    *buf = (char *) calloc(ftel + 2, sizeof(char)) +1; // ftel+2 because of element in front of,  1 behind
-    fseek(flin, 0, SEEK_SET);
-    ftel=fread(*buf, 1, ftel, flin);
-   // ftel = read(flin,*buf,ftel)
-    ;
-    *buf = realloc(*buf,ftel);
-    //fseek(flin, 0, SEEK_SET);
-    *stcount = StrCount(buf,ftel);
 
+    int buf_length = Createbuf(buf, File_Length(flin), flin );
+    *stcount = SymbolCount(buf, buf_length, '\n');
 
-    *((*buf)+ ftel) = '\n';
+    *((*buf) + buf_length) = '\n';
     *((*buf) -1) = '\0'; // \0 in first char
     (*stcount)++;
+
     *index = (struct string *) calloc(*stcount, sizeof(struct string));
     (*index)[0].str =(*buf);
     *stcount = 0;
 
-    for (char* s = (char*)memchr(*buf,'\n',ftel); s; s = (char*)memchr(s+1,'\n',ftel - (s-*buf)-1)) {// fills index
-            (*index)[++(*stcount)].str = s + 1;
-            (*index)[(*stcount) - 1].len =  (*index)[*stcount].str -  (*index)[*stcount - 1].str;
-            *s = '\0';
+    for (char* s = (char*)memchr(*buf, '\n', buf_length);
+        s;
+        s = (char*)memchr(s + 1, '\n', buf_length - (s - *buf) - 1))
+    {   // fills index
+        (*index)[++(*stcount)].str = s + 1;
+        (*index)[(*stcount) - 1].len =  (*index)[*stcount].str -  (*index)[*stcount - 1].str;
+        *s = '\0';
     }
 
 
-    (*index)[*stcount].len = *buf + ftel -  (*index)[*stcount].str + 1;//last line
+    (*index)[*stcount].len = *buf + buf_length - (*index)[*stcount].str + 1;//last line
 
+}
+
+int goodletter(char letter){
+    switch (letter) {
+        case -85: //'«'
+        case -69:
+        case '>':
+        case '(':
+        case ')':
+        case -105: //for windows letter —
+        case ':':
+        case '<':
+        case '!':
+        case '?':
+        case ';':
+        case '\'':
+        case '-':
+        case '.':
+        case '\"':
+        case ',':
+        case ' ':
+        case '\n':
+            return 0;
+        default:
+            return 1;
+    }
 }
 
 
@@ -179,55 +262,22 @@ void indexFill( char **buf, FILE* flin, int* stcount, struct string** index) {
 //!  @returns 1 if first >= second
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
-bool CompareB(struct string index1, struct string index2) {
+int CompareB(struct string index1, struct string index2) {
     assert(index1.str);
     assert(index2.str);
     int i = 0, j = 0;
-    while (true) {
-        switch (*((index1.str + i))) {
+    while (i < index1.len) {
+        while (!goodletter(*(index1.str+i))){ i++; }
+        while (!goodletter(*(index2.str+j))){ j++; }
 
-            case '<':
-            case '(':
-            case ')':
-            case -105: //for windows letter —
-            case '\'':
-            case '-':
-            case '.':
-            case '\"':
-            case ',':
-            case ' ':
-                i++;
-                continue;
-            default:
-                break;
-        }
-        switch (*(index2.str + j)) {
-            case '<':
-            case '(':
-            case ')':
-            case -105: //for windows letter —
-            case '\'':
-            case '-':
-            case '.':
-            case '\"':
-            case ',':
-            case ' ':
-                j++;
-                continue;
-            default:
-                break;
-        }
         char c1 = *(index1.str+i++), c2 = *(index2.str+j++);
 
-        if ((c1 == '\0') || c2 =='\0'){
-            return (c1 == '\0') && c2 > '\0' ? 0 : 1;
-        }
-        if ((c1 == c2)) {
-
-        } else {
-            return (c1>=c2) ? 1 : 0;
+        if (c1 == c2) {}
+        else {
+            return tolower(c1)-tolower(c2); // if <0 -> 2>1
         }
     }
+    return 0;
 }
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
@@ -242,16 +292,9 @@ bool CompareB(struct string index1, struct string index2) {
 void swap(struct string *a, struct string *b){
     assert(a);
     assert(b);
-    int k;
-    char *c;
-    k = (*a).len;
-    c = (*a).str;
-    (*a).len = (*b).len;
-    (*a).str =(*b).str;
-    (*b).len = k;
-    (*b).str = c;
-
-
+    struct string tmp = *a;
+    *a = *b;
+    *b= tmp;
 }
 
 
@@ -266,26 +309,26 @@ void swap(struct string *a, struct string *b){
 //!  @returns r - all elements with position  > r are >= index[base] , all positions < r are < index[base]
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
-int divide(int stcount,struct string* index){
+int particionStart(int stcount,struct string* index){
     assert(index);
     assert(stcount+1);
     int base = (stcount) / 2;
-    int l = 0;
-    int r = stcount;
-    struct string c = index[base];
+    int l = 0; //left
+    int r = stcount; // right
+    struct string pivot = index[base];
 
     while (true) {
 
-        while (!CompareB(index[l],c)){ // find element that >= index[base]
+        while (CompareB(index[l], pivot) < 0){ // find element that >= pivot
             l++;
-
         }
-        while (r>0 && CompareB(index[r], c)){ // find element that < index[base]
+
+        while (r>0 && (CompareB(index[r], pivot) >= 0)){ // find element that < index[base]
             r--;
-
         }
+
         if (l>=r){
-            if (l== 0 && (r == 0)) // it means that base element is smallest one
+            if (l== 0 && r == 0) // it means that base element is smallest one
                 swap(&index[base],&index[0]);
             return r+1;
         }
@@ -309,7 +352,7 @@ void sortBystart(int stcount, struct string* index)
     assert(index);
     if ( stcount == 0 || stcount == -1)
         return;
-    int k = divide(stcount,index);
+    int k = particionStart(stcount,index);
     sortBystart(k-1,index);
     sortBystart(stcount-k,index+k);
 }
@@ -327,63 +370,25 @@ void sortBystart(int stcount, struct string* index)
 //!  @returns 1 if first >= second
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
-bool ComparEnd(struct string index1, struct string index2) {
+int ComparEnd(struct string index1, struct string index2) {
     assert(index1.str);
     assert(index2.str);
     int i = 0, j = 0;
-    while (true) {
-        switch (*((index1.str +index1.len - i-2))) {
-            case '>':
-            case '(':
-            case ')':
-            case -105: //for windows letter —
-            case ':':
-            case '!':
-            case '?':
-            case ';':
-            case '\'':
-            case '-':
-            case '.':
-            case '\"':
-            case ',':
-            case ' ':
-                i++;
-                continue;
-            default:
-                break;
-        }
-        switch (*(index2.str + index2.len - j-2)) {
-            case '>':
-            case '(':
-            case ')':
-            case -105: //for windows letter —
-            case ':':
-            case '!':
-            case '?':
-            case ';':
-            case '\'':
-            case '-':
-            case '.':
-            case '\"':
-            case ',':
-            case ' ':
-                j++;
-                continue;
-            default:
-                break;
-        }
+    while (i < index1.len) {
+        while (!goodletter(*(index1.str + index1.len - i -2))){ i++; }
+        while (!goodletter(*(index2.str + index2.len - j -2))){ j++; }
+
         char c1 = *(index1.str +index1.len - i++ -2), c2 = *(index2.str + index2.len - j++ -2);
 
-        if ((c1 == '\0') || c2 =='\0'){
-            return (c1 == '\0') && c2 > '\0' ? 0 : 1;
-        }
-        if (c1 == c2) {
-
-        } else {
-            return c1>=c2 ? 1: 0;
+        if (c1 == c2) {}
+        else {
+            return tolower(c1)-tolower(c2); // if <0 -> 2>1
         }
     }
+    return 0;
 }
+
+
 
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 //!  divide the array of struct
@@ -396,7 +401,7 @@ bool ComparEnd(struct string index1, struct string index2) {
 //!  @returns r - all elements with position  > r are >= index[base] , all positions < r are < index[base]
 //‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐‐
 
-int dividEnd(int stcount,struct string* index){
+int particionEnd(int stcount,struct string* index){
     assert(index);
     assert (stcount+1);
     int base = (stcount) / 2;
@@ -437,7 +442,7 @@ void sortByend(int stcount, struct string* index)
     assert(index);
     if ( stcount == 0 || stcount == -1)
         return;
-    int k = dividEnd(stcount,index);
-    sortByend(k-1,index);
-    sortByend(stcount-k,index+k);
+    int k = particionEnd(stcount, index);
+    sortByend(k-1, index);
+    sortByend(stcount-k, index+k);
 }

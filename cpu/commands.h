@@ -2,7 +2,7 @@
 // Created by andrew on 11.10.2019.
 //
 
-
+// {имя, номер команды, код для процессора, код для компилятора, код для декомпилятора}
 DEF_CMD(PUSH, 1,
         { Stack_Push(stk1, *(int*)(buf+PC)); PC += sizeof(int); },
                               {

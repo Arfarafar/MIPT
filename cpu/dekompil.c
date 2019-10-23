@@ -45,6 +45,8 @@ while (PC < length) {
 #include <commands.h>
     }
 }
-
+    
+    fclose(flin);
+    fclose(flout);
     return 0;
 }

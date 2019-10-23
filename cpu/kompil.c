@@ -26,7 +26,7 @@ int main() {
     int num = 0;
     int position = 0;
 
-
+// struct (jumpname jumpto)
     mark label[MAX_LABLES] = {} ;
     int label_counter = 0;
 
@@ -40,11 +40,11 @@ int main() {
                                                         else if(stricmp(letter,#Name) == 0){          \
                                                         assem[PC++] = Num;  \
                                                         syntax;}
-
+// 2х проходная компиляция
 for (int j = 2; j > 0 ; j--) {
     PC = SIGNATURE_SIZE + VERSION_SIZE;
     for (int i = 0; i <= stcount; i++) {
-
+    // берем строку, проверяем ее на комментарий и метку (затираем : и ; \0 -ем)
         current_line = index[i].str;
         if (ch = strchr(current_line, ';'))
             *ch = '\0';
@@ -53,7 +53,8 @@ for (int j = 2; j > 0 ; j--) {
              Check_and_fill_jump_target(current_line, ch, label, &label_counter, PC);
                 continue;
         }
-
+        
+        // считываем команду в леттер, затем аргумент в арг
         sscanf(current_line, "%s%n", letter, &position);
 
         if (letter[0] == '\0') // if string was empty
@@ -63,7 +64,7 @@ for (int j = 2; j > 0 ; j--) {
 
 #include <commands.h>
 
-        for (int j = 0; j < 64; j++)
+        for (int j = 0; j < 64; j++) // чистим строку
             arg[j] = letter[j] = '\0';
     }
 
@@ -71,7 +72,7 @@ for (int j = 2; j > 0 ; j--) {
 #undef ERR
 #undef DEF_CMD
 
-    fwrite(assem, sizeof(char), PC, flout);
+    fwrite(assem, sizeof(char), PC, flout); // пишем буфер в файл
 
     fclose(flin);
     fclose(flout);

@@ -37,7 +37,6 @@ int main() {
 #define DEF_CMD(Name, Num, code, syntax, decode) \
     case Num: fputs(#Name " ", flout)   ;    decode                                                      \
     break;
-    
 while (PC < length) {
     char command = *(buf + PC++);
     switch (command) {
@@ -45,8 +44,6 @@ while (PC < length) {
 #include <commands.h>
     }
 }
-    
-    fclose(flin);
-    fclose(flout);
+
     return 0;
 }

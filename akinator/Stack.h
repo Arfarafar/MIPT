@@ -5,9 +5,10 @@
 #ifndef STEK_STACK_HEADER_H
 #define STEK_STACK_HEADER_H
 
+typedef int Elem_t;
 
 const float INCREACE = 1.5;
-const int POISON = -666;
+const Elem_t POISON = -666;
 #define MAXLENGTH(stk) ((stk) -> MAX_size)
 #define POSITION __FILE__ , __LINE__ , __PRETTY_FUNCTION__
 #define DUMPCALL(arg) Raise_Error((stk), arg, POSITION); assert(!"OK"); break;
@@ -43,7 +44,7 @@ enum {  NORMAL = 0 ,
         WRONGPOISON = 120,
         EUNDERFLOW = -1 };
 
-typedef int Elem_t;
+
 #define ELEMT "%d"
 
 typedef long long int Canary_t;
@@ -200,7 +201,7 @@ bool Stack_OK(stek_t* stk) {
     if (i == stk -> hash)
         return 1;
 
-    stk -> err != WRONGHASH;
+    stk -> err = WRONGHASH;
     stk -> hash = i;
     return 0;
 }
@@ -298,6 +299,8 @@ bool Stack_Push (stek_t* stk, Elem_t value){
     STACK_Check(stk)
 
     if (stk -> size >= (stk) -> MAX_size){
+
+
         (stk) -> MAX_size = (int) ((stk) -> MAX_size * INCREACE) + 1;
         HASH(stk)
         if (!Memory_allocation_data(stk))
@@ -324,18 +327,40 @@ Elem_t Stack_Pop(stek_t* stk){
 
     Elem_t y = stk -> data[ -- stk -> size];
     stk ->  data[stk -> size] = POISON;
-
-    if (stk -> size * INCREACE * INCREACE + 2 < (stk) -> MAX_size) {
+    HASH(stk)
+    if ( stk->size > 32 && stk -> size * INCREACE * INCREACE + 2 < (stk) -> MAX_size) {
         (stk) -> MAX_size = (int) ((stk) -> MAX_size / INCREACE);
         HASH(stk)
         Memory_allocation_data(stk);
     }
-     HASH(stk)
-
 
     STACK_Check(stk)
     return y;
 }
 
+bool Compare_Stack_First_Elements(stek_t* first_st, stek_t* second_st){
+    if( !first_st-> size || !second_st->size) {
+        printf("количество элементов в стеке 0\n");
+        return 0;
+    }
+    Elem_t s1 = Stack_Pop(first_st);
+    Elem_t s2 = Stack_Pop(second_st);
+    bool eq = s1 == s2;
+    Stack_Push(first_st, s1);
+    Stack_Push(second_st, s2);
+    return eq;
+}
 
+bool Compare_Stack_Second_Elements(stek_t* first_st, stek_t* second_st){
+    if( !first_st-> size || !second_st->size) {
+        printf("количество элементов в стеке 0\n");
+        return 0;
+    }
+    Elem_t s1 = Stack_Pop(first_st);
+    Elem_t s2 = Stack_Pop(second_st);
+    bool eq = Compare_Stack_First_Elements(first_st, second_st);
+    Stack_Push(first_st, s1);
+    Stack_Push(second_st, s2);
+    return eq;
+}
 

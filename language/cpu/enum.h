@@ -6,8 +6,13 @@
 #define KOMPIL_ENUM_H
 
 #include <assert.h>
+#include <stdlib.h>
 #include <cstring>
 
+const int MAXTEXTSIZE = 16384;
+const int MAXARGSIZE = 512;
+
+#define MAX
 #define VERSION 47
 
 #define ACCURACY 1000
@@ -16,13 +21,15 @@
 #define VERSION_SIZE 1
 #define PUT_SIGNATURE assem[PC++] = 'M'; assem[PC++] = 'A'; assem[PC++] = 'S';
 #define PUT_VERSION assem[PC++] = VERSION;
-#define MAX_LABLES 32
+#define MAX_LABLES 256
+#define MAXLEN 256
 
 enum REGISTERS {
     REG_NUM_ax = 0,
     REG_NUM_bx = 1,
     REG_NUM_cx = 2,
-    REG_NUM_dx = 3
+    REG_NUM_dx = 3,
+    REG_NUM_bp
 };
 
 #define DEF_CMD(Name, Num, ...)\
@@ -52,7 +59,7 @@ bool Check_Signature_Version(FILE* flin) {
     return 1;
 }
 
-#define X (Stack_Pop(stk1) / ACCURACY)
+#define X ((float)Stack_Pop(stk1) / ACCURACY)
 #define Y X
 
 #define $(what) Stack_Push(stk1, what);
@@ -62,25 +69,11 @@ float y = Y; \
 float x = X;  \
 $((Elem_t)((x sign y) * ACCURACY ));
 
-int Power (float y , float x){
-    int i = (int)y;
-    float base = 1;
-    while (i > 0){
-        if ( !(i % 2) ) {
-            i /= 2;
-            x *= x;
-        } else {
-            base *= x;
-            i--;
-        }
-    }
 
-    return (int)(base * ACCURACY);
-}
 
 struct mark{
     int address;
-    char label_name[64];
+    char label_name[MAXLEN];
 };
 
 #define LABEL   sscanf(current_line + position, "%s", arg);             \
@@ -92,8 +85,10 @@ struct mark{
                     ERR
 
 #define JUMPTO_IF(sign) \
-                        float y = X;        \
-                        if (y sign X)       \
+                        float y = X; \
+                        float x = Y;\
+                        /*printf("%f"#sign"%f\n", x,y);*/\
+                        if (x sign y)       \
                             PC = *(int*)(buf + PC) - SIGNATURE_SIZE - VERSION_SIZE; \
                         else PC += 4;
 
@@ -101,7 +96,7 @@ struct mark{
 #define FPUTARG arg = *(int*)(buf + PC); PC += 4;   fprintf(flout, " %d:\n", arg);
 
 #define REGISTER_NUM(arg, name, cmdtype) \
-(strcmp(arg, #name) == 0) { \
+(stricmp(arg, #name) == 0) { \
 assem[PC-1] = cmdtype; \
 assem[PC++] = REG_NUM_##name; }
 
@@ -110,9 +105,10 @@ assem[PC++] = REG_NUM_##name; }
                              if REGISTER_NUM(arg, ax, command )        \
                         else if REGISTER_NUM(arg, bx, command )        \
                         else if REGISTER_NUM(arg, cx, command )        \
-                        else if REGISTER_NUM(arg, dx, command )        \
+                        else if REGISTER_NUM(arg, dx, command )  \
+                        else if REGISTER_NUM(arg, bp, command )
 
-int Find_Label(mark label[], char arg[]){
+int Find_Label(struct mark label[], char arg[]){
 
     if (arg[0] == '\0')
         return -2;
@@ -123,5 +119,9 @@ int Find_Label(mark label[], char arg[]){
     }
     return -1;
 }
+
+
+
+
 
 #endif //KOMPIL_ENUM_H

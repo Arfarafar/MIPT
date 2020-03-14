@@ -1,0 +1,489 @@
+     1                                  section .text
+     2                                  
+     3                                  global _start
+     4                                  
+     5                                  ;-----------------------------------------------------
+     6                                  ; expects: end of stack is the ascii to print
+     7                                  ;			cx - length of ascii bytes to print
+     8                                  ;
+     9                                  ; destroy:  rcx, rax, rdx, rdi, rsi
+    10                                  ;-----------------------------------------------------
+    11                                  %macro  PUTNUMFROMSTACK 0
+    12                                  ;          push rax
+    13                                   ;         push rcx
+    14                                  ;          push rdi
+    15                                  ;          push rsi
+    16                                  ;          push rdx   
+    17                                  		
+    18                                  		 
+    19                                  		  mov rdx, rcx    ; strlen (str)  
+    20                                  			
+    21                                            mov rax, 0x01      
+    22                                            mov rdi, 1         ; stdout
+    23                                  
+    24                                            mov rsi, rsp
+    25                                            add rsp, rcx			; pop out the number from stack
+    26                                            
+    27                                            syscall
+    28                                  
+    29                                   ;         pop rcx
+    30                                  ;          pop rax
+    31                                  ;          pop rdi
+    32                                  ;          pop rsi
+    33                                  ;          pop rdx
+    34                                  
+    35                                  %endmacro
+    36                                  ;-----------------------------------------------------------
+    37                                  
+    38                                  
+    39                                  ;-----------------------------------------------------------
+    40                                  %macro TranslateFromDopcode 0			
+    41                                  			cmp ax, 0
+    42                                              jg  .numberhandling
+    43                                              not ax	;перевод из дополнительного кода в обычный
+    44                                              inc ax
+    45                                  %endmacro
+    46                                  ;------------------------------------------------------------
+    47                                  
+    48                                  
+    49                                  
+    50                                  ;------------------------------------------------------------
+    51                                  ;expects: ah - ascii code of symbol to print 
+    52                                  ;
+    53                                  ;destroy: ax, rsi, rdi
+    54                                  ;
+    55                                  ;------------------------------------------------------------
+    56 00000000 51                      charascii: 	push rcx
+    57 00000001 52                      			push rdx
+    58                                  
+    59 00000002 6650                    			push ax
+    60 00000004 66FFC4                  			inc sp
+    61 00000007 B901000000              			mov rcx , 1
+    62                                  
+    63                                  
+    64                                              PUTNUMFROMSTACK
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64 0000000C 4889CA              <1>  mov rdx, rcx
+    64                              <1> 
+    64 0000000F B801000000          <1>  mov rax, 0x01
+    64 00000014 BF01000000          <1>  mov rdi, 1
+    64                              <1> 
+    64 00000019 4889E6              <1>  mov rsi, rsp
+    64 0000001C 4801CC              <1>  add rsp, rcx
+    64                              <1> 
+    64 0000001F 0F05                <1>  syscall
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    64                              <1> 
+    65 00000021 5A                                  pop rdx
+    66 00000022 59                                  pop rcx
+    67 00000023 C3                                  ret
+    68                                  ;------------------------------------------------------------
+    69                                  
+    70                                  
+    71                                  
+    72                                  ;------------------------------------------------------------
+    73                                  ;expects:  rax - offset of str
+    74                                  ;
+    75                                  ; Return: rdx - strlen
+    76                                  ;------------------------------------------------------------
+    77                                  
+    78 00000024 50                      strlen		push rax
+    79 00000025 4831D2                  			xor rdx, rdx
+    80                                  
+    81 00000028 803824                  .nextchar:	cmp byte [rax], '$'
+    82 0000002B 7408                    			je .end
+    83 0000002D 48FFC2                  			inc rdx
+    84 00000030 48FFC0                  			inc rax
+    85 00000033 EBF3                    			jmp .nextchar
+    86                                  
+    87                                  
+    88 00000035 58                      .end:		pop rax
+    89 00000036 C3                      			ret
+    90                                  ;-------------------------------------------------------------
+    91                                  
+    92                                  
+    93                                  
+    94                                  
+    95                                  
+    96                                  ;------------------------------------------------------------
+    97                                  ;	expects: rах - offset str to print 
+    98                                  ;
+    99                                  ;	destroy: rax, rsi, rdi
+   100                                  ;
+   101                                  ; Print the string located in [rax] on the screen
+   102                                  ;------------------------------------------------------------
+   103 00000037 51                      string:		push rcx
+   104 00000038 52                      			push rdx
+   105                                  			
+   106 00000039 E8E6FFFFFF              			call strlen ; returns strlen in rdx 
+   107                                  
+   108 0000003E 4889C6                  			mov rsi, rax    ; offset 			
+   109 00000041 B801000000                        	mov rax, 0x01      
+   110 00000046 BF01000000                       	mov rdi, 1         ; stdout
+   111                                          		
+   112                                            
+   113 0000004B 0F05                              	syscall
+   114 0000004D 5A                                	pop rdx
+   115 0000004E 59                                  pop rcx
+   116 0000004F C3                                  ret
+   117                                  ;------------------------------------------------------------
+   118                                  
+   119                                  
+   120                                  
+   121                                  ;------------------------------------------------------------
+   122                                  ;expects: ax - num to print dec
+   123                                  ;
+   124                                  ; destroy: ax, bx, rsi, rdi
+   125                                  ;
+   126                                  ;------------------------------------------------------------
+   127 00000050 52                      dec:       	push rdx
+   128 00000051 51                      			push rcx
+   129                                  			
+   130 00000052 4831C9                  			xor rcx, rcx
+   131 00000055 6631D2                       		xor dx, dx
+   132                                  
+   133                                              
+   134                                  .numberhandling:
+   135 00000058 66BB0A00                			mov bx, 10d
+   136 0000005C 66F7F3                  			div bx
+   137 0000005F 6689D3                  			mov bx, dx
+   138 00000062 6683C330                			add bx, '0'
+   139                                  
+   140 00000066 66C1E308                			shl bx, 8 ;  mov to bh
+   141 0000006A 66FFC1                  			inc cx 
+   142 0000006D 6653                    			push bx
+   143 0000006F 66FFC4                  			inc sp   ;erase 00 byte left from bl
+   144                                  
+   145 00000072 6631D2                  			xor dx, dx
+   146 00000075 6683F800                			cmp ax, 0
+   147 00000079 75DD                    			jne .numberhandling
+   148                                  
+   149                                              PUTNUMFROMSTACK
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149 0000007B 4889CA              <1>  mov rdx, rcx
+   149                              <1> 
+   149 0000007E B801000000          <1>  mov rax, 0x01
+   149 00000083 BF01000000          <1>  mov rdi, 1
+   149                              <1> 
+   149 00000088 4889E6              <1>  mov rsi, rsp
+   149 0000008B 4801CC              <1>  add rsp, rcx
+   149                              <1> 
+   149 0000008E 0F05                <1>  syscall
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   149                              <1> 
+   150                                  
+   151                                  
+   152                                  .end:		
+   153 00000090 59                      			pop rcx
+   154 00000091 5A                      			pop rdx
+   155 00000092 C3                      			ret
+   156                                  ;------------------------------------------------------------
+   157                                  
+   158                                  
+   159                                  
+   160                                  
+   161                                  
+   162                                  
+   163                                  ;-------------------------------------------------------------
+   164                                  ;expects: ax - num to print bin
+   165                                  ;
+   166                                  ; destroy: ax, bx, rsi, rdi
+   167                                  ;
+   168                                  ;------------------------------------------------------------
+   169 00000093 52                      bin:        push rdx
+   170 00000094 51                      			push rcx
+   171                                  
+   172 00000095 4831C9                  			xor rcx, rcx
+   173 00000098 6631DB                  			xor bx, bx
+   174                                              
+   175                                              
+   176                                  .numberhandling:
+   177                                  			
+   178 0000009B 66D1E8                  			shr ax, 1
+   179 0000009E 7204                    			jc .mov1		; if there was 1 in last bit
+   180 000000A0 B730                    			mov bh, '0'
+   181 000000A2 EB02                    			jmp .leap
+   182 000000A4 B731                    .mov1:		mov bh, '1'
+   183 000000A6 66FFC1                  .leap:		inc cx
+   184 000000A9 6653                    			push bx
+   185 000000AB 66FFC4                  			inc sp  ;erase 00 byte left from bl
+   186 000000AE 6683F800                			cmp ax, 0
+   187 000000B2 75E7                    			jne .numberhandling
+   188                                  
+   189                                              PUTNUMFROMSTACK
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189 000000B4 4889CA              <1>  mov rdx, rcx
+   189                              <1> 
+   189 000000B7 B801000000          <1>  mov rax, 0x01
+   189 000000BC BF01000000          <1>  mov rdi, 1
+   189                              <1> 
+   189 000000C1 4889E6              <1>  mov rsi, rsp
+   189 000000C4 4801CC              <1>  add rsp, rcx
+   189                              <1> 
+   189 000000C7 0F05                <1>  syscall
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   189                              <1> 
+   190                                  
+   191                                  
+   192 000000C9 59                      .end:		pop rcx
+   193 000000CA 5A                      			pop rdx
+   194 000000CB C3                      			ret
+   195                                              
+   196                                              
+   197                                  ;------------------------------------------------------------
+   198                                  
+   199                                  ;-------------------------------------------------------------
+   200                                  ;expects: ax - num to print oct
+   201                                  ;
+   202                                  ; destroy: ax, bx, rsi, rdi
+   203                                  ;------------------------------------------------------------
+   204 000000CC 52                      oct:		push rdx
+   205 000000CD 51                      			push rcx
+   206                                  			
+   207 000000CE 4831C9                  			xor rcx, rcx
+   208 000000D1 6631DB                  			xor bx, bx
+   209                                              
+   210                                              
+   211                                  .numberhandling:
+   212 000000D4 6689C3                  			mov bx, ax
+   213 000000D7 66C1E803                			shr ax, 3
+   214 000000DB 6683E307                			and bx, 111b
+   215                                  			
+   216 000000DF 6683C330                			add bx, '0'
+   217 000000E3 66C1E308                			shl bx, 8 ;  mov to bh
+   218 000000E7 66FFC1                  			inc cx 
+   219 000000EA 6653                    			push bx
+   220 000000EC 66FFC4                  			inc sp   ;erase 00 byte left from bl
+   221                                  
+   222 000000EF 6683F800                			cmp ax, 0
+   223 000000F3 75DF                    			jne .numberhandling
+   224                                  
+   225                                              PUTNUMFROMSTACK
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225 000000F5 4889CA              <1>  mov rdx, rcx
+   225                              <1> 
+   225 000000F8 B801000000          <1>  mov rax, 0x01
+   225 000000FD BF01000000          <1>  mov rdi, 1
+   225                              <1> 
+   225 00000102 4889E6              <1>  mov rsi, rsp
+   225 00000105 4801CC              <1>  add rsp, rcx
+   225                              <1> 
+   225 00000108 0F05                <1>  syscall
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   225                              <1> 
+   226                                  
+   227                                  
+   228 0000010A 59                      .end:		pop rcx
+   229 0000010B 5A                      			pop rdx
+   230 0000010C C3                      			ret
+   231                                  
+   232                                  
+   233                                  ;-------------------------------------------------------------
+   234                                  ;expects: ax - num to print hex
+   235                                  ;
+   236                                  ; destroy: ax, bx, rsi, rdi
+   237                                  ;------------------------------------------------------------
+   238                                  hex:        
+   239 0000010D 52                      			push rdx
+   240 0000010E 51                      			push rcx
+   241                                  			
+   242 0000010F 4831C9                  			xor rcx, rcx
+   243 00000112 6631DB                  			xor bx, bx
+   244                                              
+   245                                              
+   246                                  .numberhandling:
+   247 00000115 6689C3                  			mov bx, ax
+   248 00000118 66C1E804                			shr ax, 4
+   249 0000011C 6683E30F                			and bx, 1111b
+   250 00000120 6683FB09                			cmp bx, 9
+   251 00000124 7706                    			ja .notanumber	
+   252 00000126 6683C330                			add bx, '0'
+   253 0000012A EB08                    			jmp .endhandling
+   254                                  .notanumber:
+   255 0000012C 6683C341                			add bx, 'A'	
+   256 00000130 6683EB0A                			sub bx , 10
+   257                                  .endhandling:
+   258 00000134 66C1E308                			shl bx, 8 ;  mov to bh
+   259 00000138 66FFC1                  			inc cx 
+   260 0000013B 6653                    			push bx
+   261 0000013D 66FFC4                  			inc sp   ;erase 00 byte left from bl
+   262                                  
+   263 00000140 6683F800                			cmp ax, 0
+   264 00000144 75CF                    			jne .numberhandling
+   265                                  
+   266                                              PUTNUMFROMSTACK
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266 00000146 4889CA              <1>  mov rdx, rcx
+   266                              <1> 
+   266 00000149 B801000000          <1>  mov rax, 0x01
+   266 0000014E BF01000000          <1>  mov rdi, 1
+   266                              <1> 
+   266 00000153 4889E6              <1>  mov rsi, rsp
+   266 00000156 4801CC              <1>  add rsp, rcx
+   266                              <1> 
+   266 00000159 0F05                <1>  syscall
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   266                              <1> 
+   267                                  
+   268                                  
+   269 0000015B 59                      .end:		pop rcx
+   270 0000015C 5A                      			pop rdx
+   271 0000015D C3                      			ret
+   272                                       
+   273                                  ;-------------------------------------------------------------
+   274                                  
+   275                                  ;-------------------------------------------------------------
+   276                                  ;получает в стеке форматную строку и аргументы
+   277                                  ;печатает ее
+   278                                  ;
+   279                                  ;--------------------------------------------------------------
+   280 0000015E 59                      printf:		pop rcx ; адрес возврата
+   281 0000015F 5A                      			pop rdx ; offset форматная строка 
+   282                                  
+   283 00000160 803A24                  .nextchar:	cmp byte [rdx], '$'
+   284 00000163 7477                    			je .end
+   285                                  
+   286 00000165 803A25                  			cmp byte [rdx], '%'
+   287 00000168 740C                    			je .specsymbol
+   288                                  
+   289 0000016A 8A22                    			mov ah, [rdx]
+   290 0000016C E88FFEFFFF              			call charascii
+   291 00000171 48FFC2                  			inc rdx
+   292 00000174 EBEA                    			jmp .nextchar
+   293                                  
+   294                                  .specsymbol:
+   295 00000176 48FFC2                  			inc rdx
+   296                                  
+   297 00000179 803A73                  			cmp byte [rdx], 's' ;string handler requires addres in [rax]
+   298 0000017C 7508                    			jne .percent
+   299 0000017E 58                      			pop rax
+   300 0000017F E8B3FEFFFF              			call string
+   301 00000184 EB51                    			jmp .endspec
+   302                                  
+   303 00000186 803A25                  .percent:	cmp byte [rdx], '%'
+   304 00000189 7509                    			jne .hex
+   305 0000018B B425                    			mov ah, '%'
+   306 0000018D E86EFEFFFF              			call charascii 
+   307 00000192 EB43                    			jmp .endspec
+   308                                  
+   309 00000194 803A78                  .hex:		cmp byte [rdx], 'x' ;hex handler requires num in rax
+   310 00000197 7508                    			jne .oct
+   311 00000199 58                      			pop rax
+   312 0000019A E86EFFFFFF              			call hex 
+   313 0000019F EB36                    			jmp .endspec
+   314                                  
+   315 000001A1 803A71                  .oct:		cmp byte [rdx], 'q' ;oct handler requires num in rax
+   316 000001A4 7508                    			jne .bin
+   317 000001A6 58                      			pop rax
+   318 000001A7 E820FFFFFF              			call oct
+   319 000001AC EB29                    			jmp .endspec
+   320                                  
+   321 000001AE 803A62                  .bin:		cmp byte [rdx], 'b' ;bin handler requires num in rax
+   322 000001B1 7508                    			jne .dec
+   323 000001B3 58                      			pop rax
+   324 000001B4 E8DAFEFFFF              			call bin
+   325 000001B9 EB1C                    			jmp .endspec 
+   326                                  
+   327 000001BB 803A64                  .dec:		cmp byte [rdx], 'd' ;dec handler requires num in rax
+   328 000001BE 7508                    			jne .char
+   329 000001C0 58                      			pop rax, 
+   330 000001C1 E88AFEFFFF              			call dec
+   331 000001C6 EB0F                    			jmp .endspec 
+   332                                  
+   333 000001C8 803A63                  .char:		cmp byte [rdx], 'c' ;char handler requires ascii in rax
+   334 000001CB 750F                    			jne .end
+   335 000001CD 58                      			pop rax
+   336 000001CE 66C1E008                			shl ax, 8
+   337 000001D2 E829FEFFFF              			call charascii 
+   338                                  
+   339                                  
+   340 000001D7 48FFC2                  .endspec:	inc rdx
+   341 000001DA EB84                    			jmp .nextchar
+   342                                  
+   343 000001DC 51                      .end:		push rcx
+   344 000001DD C3                      			ret
+   345                                  ;------------------------------------------------------------ 
+   346                                  
+   347                                  ;------------------------------------------------------------
+   348                                  
+   349 000001DE 66B83A76                _start:   	mov ax, 763ah
+   350                                              
+   351 000001E2 6814050000              			push 1300d
+   352 000001E7 6A64                    			push 100d
+   353                                  
+   354 000001E9 68DA0E0000              			push 0edah
+   355 000001EE 68[25000000]            			push Firstarg
+   356 000001F3 6A04                    			push 100b
+   357 000001F5 6A49                    			push 'I'
+   358 000001F7 68[00000000]            			push Teststring
+   359 000001FC E85DFFFFFF              			call printf
+   360                                  
+   361 00000201 B83C000000                          mov rax, 0x3C      ; exit64 (rdi)
+   362 00000206 4831FF                              xor rdi, rdi
+   363 00000209 0F05                                syscall
+   364                                  ;------------------------------------------------------------
+   365                                  
+   366                                  section .data
+   367                                  
+   368 00000000 2563206162736F6C75-     Teststring: db "%c absolutely, %b, %s %x, %d%%! %q", 13, 10 ,'$'
+   368 00000009 74656C792C2025622C-
+   368 00000012 2025732025782C2025-
+   368 0000001B 642525212025710D0A-
+   368 00000024 24                 
+   369 00000025 4C6F766524              Firstarg: db "Love", '$'
+   370                                  ;Second arg: db ""

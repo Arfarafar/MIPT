@@ -6,6 +6,11 @@ global _start
 ; expects: end of stack is the ascii to print
 ;			cx - length of ascii bytes to print
 ;
+; all functions which use this macro act like this:
+; push bx with ascii code in bh to form (bl bh) on the stack's top
+; inc sp to erase bl, inc cx, 
+; so you need to form your string from the end 
+;
 ; destroy:  rcx, rax, rdx, rdi, rsi
 ;-----------------------------------------------------
 %macro  PUTNUMFROMSTACK 0
@@ -16,13 +21,15 @@ global _start
 ;          push rdx   
 		
 		 
-		  mov rdx, rcx    ; strlen (str)  
+	  mov rdx, rcx    ; strlen (str)  
 			
           mov rax, 0x01      
           mov rdi, 1         ; stdout
 
-          mov rsi, rsp
-          add rsp, rcx			; pop out the number from stack
+          mov rsi, rsp			; where str starts
+	  
+          add rsp, rcx			; pop out the str bytes from stack
+	  				; return sp to it's normal state
           
           syscall
 
@@ -36,9 +43,10 @@ global _start
 ;-----------------------------------------------------------
 
 
+; for useage with signed numbers but never used
 ;-----------------------------------------------------------
 %macro TranslateFromDopcode 0			
-			cmp ax, 0
+	    cmp ax, 0
             jg  .numberhandling
             not ax	;перевод из дополнительного кода в обычный
             inc ax

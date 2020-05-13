@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <diff.h>
+#include "diff.h"
 
 void In_Function(FILE* flout, Node* cur_node, int key);
 void GetE(FILE* flout, Node* cur_node , int key);
@@ -22,7 +22,7 @@ int main(int argc, const char* argv[]) {
     FILE* fltree = fopen(input,"r");
     Buf* buf = Create_Buf(fltree);
     Node* head_node = Create_Node_from_file(fltree, nullptr, &(buf -> len));
-    //Treegraph(head_node);
+    Treegraph(head_node);
     fclose(fltree);
     FILE* flout = fopen(output, "wt");
 
@@ -398,7 +398,7 @@ void Walk_around_the_tree(FILE* flout, Node* cur_node) {
                 fprintf(flout, "POP bx\n");
                 fprintf(flout, "POP [bx]\n");
                 fprintf(flout, "POP bx\n\n\n");
-                break;
+                break; 
 
             case OP_GETFUNK:
 

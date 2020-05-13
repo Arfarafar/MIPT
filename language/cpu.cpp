@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <cmath>
-#include <enum.h>
+#include "enum.h"
 #include <stdlib.h>
-#include <Stack.h>
+#include "stack.h"
 
 int Create_buf(FILE* flin, char** buf);
 
 
-#include <types.h>
+#include "types.h"
 int main(int argc, const char* argv[]) {
 
     char input[MAXLEN] = "../../../code/code.asmer";
@@ -55,7 +55,7 @@ int main(int argc, const char* argv[]) {
         command = *(buf + PC++);
         //printf("before %d %d\n", PC++, command);
         switch (command) {
-#include <commands.h>
+#include "commands.h"
         }
         /*printf("after %d %d\n", PC, command);
         for(int i = 4; i < 15 ; i++){

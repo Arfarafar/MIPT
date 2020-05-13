@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include <diff.h>
+#include "diff.h"
 
 void Get_GetArgs(FILE* flout, Node* cur_node );
 void Restore_Code(FILE* flout, Node* cur_node, char level);
 
 int main(int argc, const char* argv[]) {
 
-    char input[MAXLEN] = "../../../code/tree.txt";
-    char output[MAXLEN] = "../../../code/restored_code.txt";
+    char input[MAXLEN] = "tree.txt";
+    char output[MAXLEN] = "restored_code.txt";
 
     if (argv[1]) {
         strcpy (input, argv[1]);

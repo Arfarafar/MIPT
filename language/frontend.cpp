@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <cctype>
 #include <strings.h>
-#include <diff.h>
-#include <treegrap.h>
+#include "diff.h"
+#include "treegrap.h"
 
 
 Node* GetN();
@@ -22,8 +22,8 @@ const  Token* Global__cur_token = {};
 
 int main(int argc, const char* argv[]) {
 
-    char input[MAXLEN] = "../../../code/code.txt";
-    char output[MAXLEN] = "../../../code/tree.txt";
+    char input[MAXLEN] = "code.txt";
+    char output[MAXLEN] = "tree.txt";
 
     if (argv[1]) {
         strcpy (input, argv[1]);

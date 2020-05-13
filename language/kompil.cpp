@@ -3,15 +3,15 @@
 #include <assert.h>
 #include <cstring>
 #include <stdlib.h>
-#include <onegin.h>
-#include <enum.h>
+#include "onegin.h"
+#include "enum.h"
 
 bool Check_and_fill_jump_target(char* current_line, char* ch, mark* label, int* label_counter, int PC);
 void Compil(struct string *index, int stcount, int* PC, char assem[], struct mark* label, int* label_counter);
 void Free_Args(char* letter, char* arg);
 bool Comment_or_Jump(char* current_line, struct mark* label, int* label_counter, int* PC);
 
-#include <types.h>
+#include "types.h"
 
 int main(int argc, const char* argv[]) {
 
@@ -83,7 +83,7 @@ void Compil(struct string *index, int stcount, int* IP, char assem[], struct mar
 
 #define ERR  printf("in line %d syntax error\n", i+1);
 #define DEF_CMD(Name, Num, code, syntax, decode)       \
-                                                        else if(stricmp(letter,#Name) == 0){          \
+                                                        else if(strcasecmp(letter,#Name) == 0){ \
                                                         assem[PC++] = Num;  \
                                                         syntax;}
 
@@ -95,14 +95,14 @@ void Compil(struct string *index, int stcount, int* IP, char assem[], struct mar
             continue;
         }
 
-        sscanf(current_line, "%s%n", letter, &position);
+        sscanf(current_line, " %s%n", letter, &position);
 
         if (letter[0] == '\0') // if string was empty
             continue;
 
         BEGIN_DEF_CMD
 
-#include <commands.h>
+#include "commands.h"
 
       Free_Args(letter, arg);
     }

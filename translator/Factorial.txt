@@ -1,0 +1,15 @@
+factorial (a)
+    snuf-snuf (a smels_like 1)
+        bring_prey 1;
+    run_like_tornado
+
+    t meow a mrr 1;
+    bring_prey a murr factorial (t);
+run_like_tornado
+
+main ()
+    eat a;
+    a meow factorial (a);
+    kkxxr_on_carpet a;
+run_like_tornado
+

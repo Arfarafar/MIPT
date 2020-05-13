@@ -1,0 +1,1 @@
+{;{$factorial{,@{a}}{op{if{=={a}{1}}{if-else{op{ret{1}@}@}@}}{op{={t}{-{a}{1}}}{op{ret{*{a}{$factorial{,@{t}}@}}@}@}}}}{;{$main@{op{get{a}@}{op{={a}{$factorial{,@{a}}@}}{op{put{a}@}@}}}}@}}

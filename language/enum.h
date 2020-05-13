@@ -36,7 +36,7 @@ enum REGISTERS {
 CMD_##Name = Num,
 
 enum COMMANDS {
-#include <commands.h>
+#include "commands.h"
 
 };
 #undef DEF_CMD
@@ -96,7 +96,7 @@ struct mark{
 #define FPUTARG arg = *(int*)(buf + PC); PC += 4;   fprintf(flout, " %d:\n", arg);
 
 #define REGISTER_NUM(arg, name, cmdtype) \
-(stricmp(arg, #name) == 0) { \
+(strcasecmp(arg, #name) == 0) { \
 assem[PC-1] = cmdtype; \
 assem[PC++] = REG_NUM_##name; }
 

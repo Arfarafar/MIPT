@@ -3,7 +3,7 @@ section .text
 global _start
 
 ;-----------------------------------------------------
-; expects: end of stack is the ascii to print
+; "expects: end of stack is the ascii to print
 ;			cx - length of ascii bytes to print
 ;
 ; all functions which use this macro act like this:
@@ -11,7 +11,7 @@ global _start
 ; inc sp to erase bl, inc cx, 
 ; so you need to form your string from the end 
 ;
-; destroy:  rcx, rax, rdx, rdi, rsi
+; destroy:  rcx, rax, rdx, rdi, rsi"
 ;-----------------------------------------------------
 %macro  PUTNUMFROMSTACK 0
 ;          push rax
@@ -29,7 +29,7 @@ global _start
           mov rsi, rsp			; where str starts
 	  
           add rsp, rcx			; pop out the str bytes from stack
-	  				; return sp to it's normal state
+	  				; " return sp to it's normal state"
           
           syscall
 
@@ -363,7 +363,7 @@ _start:
 			push 100b
 			push 'I'
 			push Teststring
-			call printf
+			call printf ;stdcall 
 
             mov rax, 0x3C      ; exit64 (rdi)
             xor rdi, rdi

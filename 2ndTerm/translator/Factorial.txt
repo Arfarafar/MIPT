@@ -1,0 +1,15 @@
+factorial (mouse)
+    snuf-snuf (mouse smels_like 1)
+        bring_prey 1;
+    run_like_tornado
+
+    bring_prey mouse murr factorial (mouse mrr 1);
+run_like_tornado
+
+main ()
+    eat mouse;
+    mouse meow factorial (mouse);
+    kkxxr_on_carpet mouse;
+run_like_tornado
+
+ 

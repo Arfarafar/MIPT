@@ -3,6 +3,7 @@
 
 const int MAXCODELEN = 64000;
 const int MAXFUNCS = 32;
+const int BASE_LOAD_ADDRES = 0x400000;
 ArrayVars GVar_array = {};
 int datasize = 0;
 int cur_datasize = 0;
@@ -35,7 +36,7 @@ Functable* Make_Functable();
 void Destruct_Functable(Functable* functable);
 char* Make_elfHeader(int progsize, int offset_start);
 void ADD_printf(codeBuf* codebuf, Functable* functable);
-int Find_in_functable(Functable* functable, char* name);
+int Find_in_functable(Functable* functable, const char* name);
 
 
 
@@ -91,9 +92,10 @@ int main(int argc, const char* argv[]) {
 }
 
 
-#define WRITE(what, len) sprintf(codebuf -> buffer + codebuf -> size, what); \
-                         codebuf -> size += len;  
-
+void CopyInBuf(codeBuf* codebuf, const char* sourse, unsigned int size){
+    memcpy(codebuf -> buffer + codebuf -> size, sourse, size);
+    codebuf -> size += size;
+}
 
 Functable* Make_Functable(){
     Functable* functable = (Functable*) calloc (1, sizeof(Functable));
@@ -135,8 +137,10 @@ void Destruct_Functable(Functable* functable){
 }
 
 
+
+
 void ADD_printf(codeBuf* codebuf, Functable* functable){
-    char print[] = { 
+    char print[] =  
         "\x48" "\x31" "\xc9" "\x31" "\xd2" "\x66" "\x31" "\xf6" "\x83" "\xf8" "\x00" "\x7f" "\x07" "\xf7" "\xd0" "\xff" 
         "\xc0" "\x66" "\xff" "\xc6" "\xbb" "\xe8" "\x03" "\x00" "\x00" "\x48" "\xf7" "\xeb" "\x48" "\xc1" "\xe8" "\x0a" 
         "\x31" "\xd2" "\xbb" "\x0a" "\x00" "\x00" "\x00" "\xf7" "\xf3" "\x89" "\xd3" "\x83" "\xc3" "\x30" "\x66" "\xc1" 
@@ -146,28 +150,26 @@ void ADD_printf(codeBuf* codebuf, Functable* functable){
         "\x2d" "\xc1" "\xe3" "\x08" "\xff" "\xc1" "\x66" "\x53" "\x48" "\xff" "\xc4" "\x31" "\xdb" "\x83" "\xc3" "\x0d" 
         "\xc1" "\xe3" "\x08" "\xff" "\xc1" "\x66" "\x53" "\x48" "\xff" "\xc4" "\x31" "\xdb" "\x83" "\xc3" "\x0a" "\xc1" 
         "\xe3" "\x08" "\xff" "\xc1" "\x66" "\x53" "\x48" "\xff" "\xc4" "\x48" "\x89" "\xca" "\xb8" "\x01" "\x00" "\x00" 
-        "\x00" "\xbf" "\x01" "\x00" "\x00" "\x00" "\x48" "\x89" "\xe6" "\x48" "\x01" "\xcc" "\x0f" "\x05" "\xc3" };
-    char scan[] = {
+        "\x00" "\xbf" "\x01" "\x00" "\x00" "\x00" "\x48" "\x89" "\xe6" "\x48" "\x01" "\xcc" "\x0f" "\x05" "\xc3";
+    char scan[] = 
         "\x48" "\x31" "\xd2" "\x66" "\x31" "\xff" "\x31" "\xc0" 
         "\xbb" "\x0a" "\x00" "\x00" "\x00" "\x80" "\x3e" "\x2d" 
         "\x75" "\x06" "\x48" "\xff" "\xc6" "\x66" "\xff" "\xc7" 
-        "\x80" "\x3e" "\x3b" "\x74" "\x10" "\xf7" "\xe3" "\x8a" 
+        "\x80" "\x3e" "\x0a" "\x74" "\x10" "\xf7" "\xe3" "\x8a" 
         "\x16" "\x01" "\xd0" "\x30" "\xd2" "\x83" "\xe8" "\x30"
         "\x48" "\xff" "\xc6" "\xeb" "\xeb" 
         "\x66" "\x83" "\xff" "\x01" "\x75" "\x04" "\xff" "\xc8" 
-        "\xf7" "\xd0" "\xc1" "\xe0" "\x0a" "\x89" "\x01" "\xc3" };
+        "\xf7" "\xd0" "\xc1" "\xe0" "\x0a" "\x89" "\x01" "\xc3";
 
- memcpy(codebuf -> buffer + codebuf -> size, print, sizeof(print) - 1 );
- codebuf -> size += (sizeof(print) - 1);
+ CopyInBuf(codebuf, print,  sizeof(print) - 1);
  strcpy(functable -> func[0].name, "printf");
- functable -> func[0].offset = 0x400080;
+ functable -> func[0].offset = BASE_LOAD_ADDRES + 0x80;
 
  strcpy(functable -> func[1].name, "scanf");
- functable -> func[1].offset = 0x400080 + codebuf -> size;
- memcpy(codebuf -> buffer + codebuf -> size, scan, sizeof(scan) - 1 );
- codebuf -> size += (sizeof(scan) - 1);
+ functable -> func[1].offset = BASE_LOAD_ADDRES + 0x80 + codebuf -> size;
+ CopyInBuf(codebuf, scan,  sizeof(scan) - 1);
 
- functable->size += 2;
+ functable->size = 2;
 }
 
 
@@ -195,7 +197,7 @@ void Get_SendArgs(codeBuf* codebuf, Node* cur_node, int key,
 
     if (NODEVALUE(OP_SENDARGS) && NODETYPE(TYPE_SYST)){
 
-         WRITE("\x49\x89\x3e\x49\x83\xc6\x08", 7) 
+         CopyInBuf(codebuf, "\x49\x89\x3e\x49\x83\xc6\x08", 7); 
          //mov [r14], rdi
          // add r14, 8
         cur_datasize += 8; 
@@ -203,12 +205,12 @@ void Get_SendArgs(codeBuf* codebuf, Node* cur_node, int key,
                             datasize += 8;  
         GetE(codebuf, cur_node -> right, key, functable);    //rax
         cur_datasize -= 8; 
-        WRITE("\x49\x83\xee\x08\x49\x8b\x3e", 7) 
+        CopyInBuf(codebuf, "\x49\x83\xee\x08\x49\x8b\x3e", 7); 
         //sub r14, 8
         //mov rdi, [r14]
         
 
-        WRITE("\x48\x83\xef\x04\x89\x07", 6)    // sub rdi ,4 
+        CopyInBuf(codebuf, "\x48\x83\xef\x04\x89\x07", 6);    // sub rdi ,4 
                                                 //mov  [rdi], eax
         if (cur_node -> left){
             Get_SendArgs(codebuf, cur_node -> left, key, var_num + 1, functable);
@@ -245,7 +247,7 @@ int Find_in_GV(char* id){
     return -1;
 }
 
-int Find_in_functable(Functable* functable, char* name){
+int Find_in_functable(Functable* functable, const char* name){
     for(int i = 0; i < functable -> size; i++ ){
         if (strcmp(name, functable -> func[i].name) == 0){
             return functable -> func[i].offset;
@@ -255,13 +257,13 @@ int Find_in_functable(Functable* functable, char* name){
 }
 
 #define  RbxLax     GetE(codebuf, cur_node -> right, key, functable) ; \
-                    WRITE("\x49\x89\x06\x49\x83\xc6\x08", 7) \
+                    CopyInBuf(codebuf, "\x49\x89\x06\x49\x83\xc6\x08", 7); \
                     cur_datasize += 8; \
                     if(cur_datasize > datasize) \
                             datasize += 8; \
                     GetE(codebuf, cur_node -> left, key, functable);    \
                     cur_datasize -= 8; \
-                    WRITE("\x49\x83\xee\x08\x49\x8b\x1e", 7) 
+                    CopyInBuf(codebuf, "\x49\x83\xee\x08\x49\x8b\x1e", 7); 
 //rax  
                     //mov [r14], rax 
                     //add r14, 8
@@ -283,13 +285,9 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
             //переменная ищется в текущем стековом фрейме и кладется в rax 
             if (temp =  Find_in_curFun(key, Var_array.var[(int) cur_node->value].name) + 1) {
                 temp *= 4;
-                sprintf(codebuf -> buffer + codebuf -> size, "\x48\x89\xe9\x48\x81\xe9%c%c%c%c"
-                                                                "\x8b\x01"
-                                                                "\x48\x63\xc0",
-                                                             *(char*)&temp, *((char*)&temp + 1),
-                                                             *((char*)&temp + 2), *((char*)&temp + 3)); 
-                         codebuf -> size += 15;  
-
+                char var[] = "\x48\x89\xe9\x48\x81\xe9\x00\x00\x00\x00\x8b\x01\x48\x63\xc0";
+                *(int*)(var+6) = temp; 
+                CopyInBuf(codebuf, var,  15);
                                                     // mov rcx, rbp
                                                     // sub rcx, temp 
                                                     // mov eax, [rcx] 
@@ -301,35 +299,25 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
         case TYPE_FUNK:
         {
             int temp = Fun_array.var[key].vars.size * 4 + 16;
-            sprintf(codebuf -> buffer + codebuf -> size, "\x48\x89\xef\x48\x81\xef%c%c%c%c",
-                                                     *(char*)&temp, *((char*)&temp + 1),
-                                                     *((char*)&temp + 2), *((char*)&temp + 3)); 
-            codebuf -> size += 10; 
+            char frame[] = "\x48\x89\xef\x48\x81\xef\x00\x00\x00\x00"; 
+            *(int*)(frame+6) = temp; 
+            CopyInBuf(codebuf, frame,  10);
             
                     //mov rdi, rbp
                     //sub rdi, temp
 
             Get_SendArgs(codebuf, cur_node -> left, key, Fun_array.var[key].vars.size, functable);
-            char zero = 0;
+
             int offset = Find_in_functable(functable, Fun_array.var[(int)cur_node -> value].name);
-            sprintf(codebuf -> buffer + codebuf -> size, "\x48\x81\xed%c%c%c%c"
-                    "\x48\x89\xec\x48\x83\xc4\x08"
-                    "\xeb\x14\x48\x83\xc4\x08"
-                    "\x48\xc7\x04\x24%c%c%c%c"
-                    "\xc7\x04\x24%c%c%c%c"
-                    "\xc3\xe8\xe7\xff\xff\xff\x48\x81\xc5%c%c%c%c",
-                     *(char*)&temp, *((char*)&temp + 1),
-                     *((char*)&temp + 2), *((char*)&temp + 3),
+            char call[] =  "\x48\x81\xed\x00\x00\x00\x00\x48\x89\xec\x48\x83\xc4\x08"
+                            "\xeb\x14\x48\x83\xc4\x08\x48\xc7\x04\x24\x00\x00\x00\x00"
+                            "\xc7\x04\x24\x00\x00\x00\x00"
+                            "\xc3\xe8\xe7\xff\xff\xff\x48\x81\xc5\x00\x00\x00\x00";
+                     *(int*)(call+3) = temp;
+                     *(int*)(call+44) = temp;
+                     *(int*)(call+31) = offset;
 
-                     zero, zero, zero, zero,
-
-                      *(char*)&offset, *((char*)&offset + 1),
-                     *((char*)&offset + 2), *((char*)&offset + 3),
-
-                     *(char*)&temp, *((char*)&temp + 1),
-                    *((char*)&temp + 2), *((char*)&temp + 3)); 
-
-            codebuf -> size += 48; 
+           CopyInBuf(codebuf, call,  48);
             // sub rbp, Fun_array.var[key].vars.size * 4 + 16
             // mov rsp,rbp
             // add rsp,8
@@ -351,18 +339,18 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
             switch ((int)cur_node -> value){
                 case OP_MINUS:
                     RbxLax              
-                    WRITE("\x48\x29\xd8", 3)    // sub rax, rbx  
+                    CopyInBuf(codebuf, "\x48\x29\xd8", 3);    // sub rax, rbx  
 
                     break;
 
                 case OP_PLUS:
                     RbxLax
-                    WRITE("\x48\x01\xd8", 3)    // add rax, rbx
+                    CopyInBuf(codebuf, "\x48\x01\xd8", 3);    // add rax, rbx
                     break;
 
                 case OP_MUL:
                     RbxLax
-                    WRITE("\x48\xf7\xeb\x48\xc1\xf8\x0a", 7)
+                    CopyInBuf(codebuf, "\x48\xf7\xeb\x48\xc1\xf8\x0a", 7);
                                                 
                                              //imul rbx
                                              // sar rax, 10
@@ -381,14 +369,10 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
                 i:  idiv rbx
                    */
 
-                    char div[] = { 
-              "\x48" "\xc1" "\xe0" "\x0a" "\x48" "\x83" "\xf8" "\x00" "\x7f" "\x09" "\x48"
-               "\xc7" "\xc2" "\xff" "\xff" "\xff" 
-                 "\xff" "\xeb" "\x02" "\x31" "\xd2" 
-                 "\x48" "\xf7" "\xfb"  };
+                    char div[] =  "\x48\xc1\xe0\x0a\x48\x83\xf8\x00\x7f\x09\x48"
+                            "\xc7\xc2\xff\xff\xff\xff\xeb\x02\x31\xd2\x48\xf7\xfb";
 
-                         memcpy(codebuf -> buffer + codebuf -> size, div, sizeof(div) - 1 );
-                         codebuf -> size += (sizeof(div) - 1);
+                         CopyInBuf(codebuf, div,  sizeof(div)-1);
  
                         break;
                     }
@@ -398,14 +382,13 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
                         GetE(codebuf, cur_node -> left, key, functable);
 
                         int temp = Fun_array.var[key].vars.size * 4 + 8;
-                        sprintf(codebuf -> buffer + codebuf -> size, 
-                            "\x9b\xdb\xe3\x48\x89\xe9\x48\x81\xe9%c%c%c%c"
+                         char pow[] = 
+                            "\x48\x89\xe9\x48\x81\xe9\x00\x00\x00\x00"
                             "\x48\xc1\xe0\x0a\x48\x89\x01\xdf\x29"
-                            "\xd9\xfa\x9b\xdf\x39\x48\x8b\x01",
-                                                         *(char*)&temp, *((char*)&temp + 1),
-                                                         *((char*)&temp + 2), *((char*)&temp + 3)); 
-                         codebuf -> size += 30; 
-                         // finit
+                            "\xd9\xfa\x9b\xdf\x39\x48\x8b\x01";
+                            *(int*)(pow + 9) = temp;
+                            CopyInBuf(codebuf, pow,  27); 
+                         
                          // mov rcx, rbp
                          // sub rcx, temp
                          // shl rax, 10
@@ -427,10 +410,10 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
         case TYPE_NUM: // пишем все в инт*1024
                 {
                   int temp = (int) (cur_node -> value * 1024);
-                  sprintf(codebuf -> buffer + codebuf -> size, "\xb8%c%c%c%c\x48\x63\xc0",
-                                                        *(char*)&temp, *((char*)&temp + 1),
-                                                        *((char*)&temp + 2), *((char*)&temp + 3)); 
-                  codebuf -> size += 8; 
+                  char num[] = "\xb8\x00\x00\x00\x00\x48\x63\xc0";
+
+                  *(int*)(num + 1) = temp;
+                  CopyInBuf(codebuf, num,  8); 
                     //mov eax, temp
                     //movsx rax, eax
                 }
@@ -449,33 +432,33 @@ void GetEq(codeBuf* codebuf, Node* cur_node, int key, Functable* functable){
         switch ((int)cur_node -> value){
             case OP_MORE:
                     RbxLax
-                    WRITE("\x48\x39\xd8\x0f\x8e", 5) //cmp rax, rbx 
+                    CopyInBuf(codebuf, "\x48\x39\xd8\x0f\x8e", 5); //cmp rax, rbx 
                     //jng 
    
                 break;
             case OP_MORE_EQ:
                     RbxLax
-                    WRITE("\x48\x39\xd8\x0f\x8c", 5) //cmp rax, rbx  
+                    CopyInBuf(codebuf, "\x48\x39\xd8\x0f\x8c", 5); //cmp rax, rbx  
                     //jnge 
                 break;
             case OP_LESS:
                     RbxLax
-                    WRITE("\x48\x39\xd8\x0f\x8d", 5) //cmp rax, rbx 
+                    CopyInBuf(codebuf, "\x48\x39\xd8\x0f\x8d", 5); //cmp rax, rbx 
                     //jnl
                 break;
             case OP_LESS_EQ:
                     RbxLax
-                    WRITE("\x48\x39\xd8\x0f\x8f", 5) //cmp rax, rbx 
+                    CopyInBuf(codebuf, "\x48\x39\xd8\x0f\x8f", 5); //cmp rax, rbx 
                     //jnle  
                 break;
             case OP_EQUAL:
                     RbxLax
-                    WRITE("\x48\x39\xd8\x0f\x85", 5) //cmp rax, rbx 
+                    CopyInBuf(codebuf, "\x48\x39\xd8\x0f\x85", 5); //cmp rax, rbx 
                     //jne
                 break;
             case OP_NOT_EQUAL:
                     RbxLax
-                    WRITE("\x48\x39\xd8\x0f\x84", 5) //cmp rax, rbx 
+                    CopyInBuf(codebuf, "\x48\x39\xd8\x0f\x84", 5); //cmp rax, rbx 
                     //je 
                 break;
             default:
@@ -493,35 +476,30 @@ void GetIF(codeBuf* codebuf, Node* cur_node, int key, Functable* functable){
     codeBuf* codeCondition = Create_codeBuf(MAXCODELEN / 4);
     
     GetEq(codeCondition, cur_node->left, key, functable);
-
     cur_node = cur_node->right;
-
     In_Function(codeIF, cur_node->left, key, functable);
 
     if (cur_node->right) {
         In_Function(codeELSE, cur_node->right, key, functable);
     }
+
+
   // вставить в конец блока if прыжок на конец блока else 
     int temp = codeELSE -> size;
-    sprintf(codeIF -> buffer + codeIF -> size, "\xe9%c%c%c%c",
-                                                *(char*)&temp, *((char*)&temp + 1),
-                                                *((char*)&temp + 2), *((char*)&temp + 3)); 
-    codeIF -> size += 5; 
+    char IF[] = "\xe9\x00\x00\x00\x00";   //jmp                                        
+    *(int*)(IF + 1) = temp;
+    CopyInBuf(codeIF, IF,  5); 
 
- // вставить в конец блока condition прыжок на конец блока if 
+  
+  // вставить в конец блока condition прыжок на конец блока if 
     temp = codeIF -> size;
-    sprintf(codeCondition -> buffer + codeCondition -> size, "%c%c%c%c",
-                                                *(char*)&temp, *((char*)&temp + 1),
-                                                *((char*)&temp + 2), *((char*)&temp + 3)); 
-    codeCondition -> size += 4; 
+    CopyInBuf(codeCondition, (char*)&temp,  4);  
 
 
-    memcpy(codebuf -> buffer + codebuf -> size, codeCondition -> buffer, codeCondition -> size);
-    codebuf -> size += codeCondition -> size;
-    memcpy(codebuf -> buffer + codebuf -> size, codeIF -> buffer, codeIF -> size);
-    codebuf -> size += codeIF -> size;                                                      
-    memcpy(codebuf -> buffer + codebuf -> size, codeELSE -> buffer, codeELSE  -> size);
-    codebuf -> size += codeELSE -> size;
+
+    CopyInBuf(codebuf   , codeCondition -> buffer  , codeCondition -> size);
+    CopyInBuf(codebuf   , codeIF -> buffer         , codeIF -> size);
+    CopyInBuf(codebuf   , codeELSE -> buffer       , codeELSE  -> size);
 
     Destruct_codeBuf(codeELSE);
     Destruct_codeBuf(codeIF);
@@ -534,26 +512,20 @@ void GetWH(codeBuf* codebuf, Node* cur_node, int key, Functable* functable){
     codeBuf* codeCondition = Create_codeBuf(MAXCODELEN / 4);
     
     GetEq(codeCondition, cur_node->left, key, functable);
-
     In_Function(codeBody, cur_node->right, key, functable);
 
- // jmp на проверку условия
+ // jmp на проверку условия из конца цикла
     int temp = -(codeCondition -> size + 4 + codeBody -> size + 5);
-    sprintf(codeBody -> buffer + codeBody -> size, "\xe9%c%c%c%c",
-                                                *(char*)&temp, *((char*)&temp + 1),
-                                                *((char*)&temp + 2), *((char*)&temp + 3)); 
-    codeBody -> size += 5; 
+    char IF[] = "\xe9\x00\x00\x00\x00";           //jmp                                
+    *(int*)(IF + 1) = temp;
+    CopyInBuf(codeBody, IF,  5);
 
-    temp = codeBody -> size; // если условие не верное прыгни в конец
-    sprintf(codeCondition -> buffer + codeCondition -> size, "%c%c%c%c",
-                                                *(char*)&temp, *((char*)&temp + 1),
-                                                *((char*)&temp + 2), *((char*)&temp + 3)); 
-    codeCondition -> size += 4; 
+    temp = codeBody -> size; // если условие не верное перепрыгни цикл
+    CopyInBuf(codeCondition, (char*)&temp,  4);  
+ 
 
-    memcpy(codebuf -> buffer + codebuf -> size, codeCondition -> buffer, codeCondition -> size);
-    codebuf -> size += codeCondition -> size;
-    memcpy(codebuf -> buffer + codebuf -> size, codeBody -> buffer, codeBody -> size);
-    codebuf -> size += codeBody -> size;     
+    CopyInBuf(codebuf   , codeCondition -> buffer   , codeCondition -> size);
+    CopyInBuf(codebuf   , codeBody -> buffer        , codeBody -> size);     
 
     Destruct_codeBuf(codeBody);
     Destruct_codeBuf(codeCondition);
@@ -578,12 +550,11 @@ void In_Function(codeBuf* codebuf, Node* cur_node, int key, Functable* functable
                     temp = Fun_array.var[key].vars.size++;
                 }
                 temp = temp * 4 + 4;
-                sprintf(codebuf -> buffer + codebuf -> size, 
-                        "\x48\x89\xe9\x48\x81\xe9%c%c%c%c"
-                        "\x89\x01",
-                        *(char*)&temp, *((char*)&temp + 1),
-                        *((char*)&temp + 2), *((char*)&temp + 3)); 
-                codebuf -> size += 12; 
+                char var[] = 
+                        "\x48\x89\xe9\x48\x81\xe9\x00\x00\x00\x00"
+                        "\x89\x01";
+                 *(int*)(var + 6) = temp;
+                  CopyInBuf(codebuf, var,  12);  
                 
                 //mov rcx, rbp 
                 //sub rcx, temp
@@ -604,9 +575,11 @@ void In_Function(codeBuf* codebuf, Node* cur_node, int key, Functable* functable
             case OP_RETURN:
 
                 GetE(codebuf, cur_node->left, key, functable);// rax
-                WRITE("\x48\x89\xec\xc3", 4)
-                //mov rsp, rbp
-                 //ret
+                CopyInBuf(codebuf,  "\x48\x89\xec"   // mov rsp, rbp
+                                    "\xc3",          // ret
+                                     4);
+                
+                
                 break;
 
             case OP_GETOP:
@@ -629,16 +602,14 @@ void In_Function(codeBuf* codebuf, Node* cur_node, int key, Functable* functable
                 temp = temp * 4 + 4;
 
                 
-                sprintf(codebuf -> buffer + codebuf -> size,
-                "\x48\x89\xee\x48\x81\xee%c%c%c%c" 
-                "\x48\x83\xee\x30"   
-                        "\x48\x31\xc0\x48\x31\xff"                  
-                        "\x48\x31\xd2\xb2\x20\x0f"
-                        "\x05\x48\x89\xf1\x48\x83\xc1\x30"
-                        "\x48\x89\xcc",
-                        *(char*)&temp, *((char*)&temp + 1),
-                        *((char*)&temp + 2), *((char*)&temp + 3)); 
-                codebuf -> size += 37; 
+                char get[] =    "\x48\x89\xee"
+                                "\x48\x81\xee" "\x00\x00\x00\x00" 
+                                "\x48\x83\xee\x30\x48\x31\xc0\x48\x31\xff"                  
+                                "\x48\x31\xd2\xb2\x20\x0f\x05\x48\x89\xf1"
+                                "\x48\x83\xc1\x30"  // add rcx, 48
+                                "\x48\x89\xcc" ;    // mov rsp, rcx
+                *(int*)(get + 6) = temp;
+                CopyInBuf(codebuf, get,  37);  
                 // mov rsi, rbp
                 // sub rsi, temp
                 // sub rsi, 48                
@@ -647,24 +618,18 @@ void In_Function(codeBuf* codebuf, Node* cur_node, int key, Functable* functable
                 // mov rdx, 32
                 // syscall
                 // mov rcx, rsi
-                // add rcx, 48
-                // mov rsp, rcx
+                
+                
 
-                    char zero = 0;
                     int offset = Find_in_functable(functable, "scanf");
-                    sprintf(codebuf -> buffer + codebuf -> size, 
-                    "\xeb\x14\x48\x83\xec\x08"
-                    "\xc7\x44\x24\x04%c%c%c%c"
-                    "\xc7\x04\x24%c%c%c%c"
-                    "\xc3\xe8\xe7\xff\xff\xff",
+                    
+                    char call[] =  "\xeb\x14\x48\x83\xec\x08"
+                                    "\xc7\x44\x24\x04\x00\x00\x00\x00"
+                                    "\xc7\x04\x24\x00\x00\x00\x00"
+                                    "\xc3\xe8\xe7\xff\xff\xff";
+                     *(int*)(call + 17) = offset;
 
-                     zero, zero, zero, zero,
-
-                      *(char*)&offset, *((char*)&offset + 1),
-                     *((char*)&offset + 2), *((char*)&offset + 3)); 
-
-                    codebuf -> size += 27; 
-
+                    CopyInBuf(codebuf, call,  27);
                     // jmp call
                     // sub rsp, 8 <------------+
                     // mov dword[rsp+4], 0     |
@@ -682,29 +647,22 @@ void In_Function(codeBuf* codebuf, Node* cur_node, int key, Functable* functable
                      /*mov rsp, rbp
                     sub rsp, temp
                      */
-                     
                     int temp = Fun_array.var[key].vars.size * 4;
-                    sprintf(codebuf -> buffer + codebuf -> size, 
-                        "\x48\x89\xec\x48\x81\xec%c%c%c%c",
-                        *(char*)&temp, *((char*)&temp + 1),
-                        *((char*)&temp + 2), *((char*)&temp + 3)); 
-                     codebuf -> size += 10; 
+                    char put[] =  "\x48\x89\xec\x48\x81\xec\x00\x00\x00\x00";
+                        *(int*)(put + 6) = temp;
 
+                    CopyInBuf(codebuf, put,  10);
 
-                    char zero = 0;
+                    
                     int offset = Find_in_functable(functable, "printf");
-                    sprintf(codebuf -> buffer + codebuf -> size, 
-                    "\xeb\x14\x48\x83\xec\x08"
-                    "\xc7\x44\x24\x04%c%c%c%c"
-                    "\xc7\x04\x24%c%c%c%c"
-                    "\xc3\xe8\xe7\xff\xff\xff",
+                    
+                    char call[] =  "\xeb\x14\x48\x83\xec\x08"
+                                    "\xc7\x44\x24\x04\x00\x00\x00\x00"
+                                    "\xc7\x04\x24\x00\x00\x00\x00"
+                                    "\xc3\xe8\xe7\xff\xff\xff";
+                     *(int*)(call+17) = offset;
 
-                     zero, zero, zero, zero,
-
-                      *(char*)&offset, *((char*)&offset + 1),
-                     *((char*)&offset + 2), *((char*)&offset + 3)); 
-
-                    codebuf -> size += 27; 
+                    CopyInBuf(codebuf, call,  27);
 
                     // jmp call
                     // sub rsp, 8 <------------+
@@ -733,30 +691,7 @@ void Walk_around_the_tree(codeBuf* codebuf, Node* cur_node, Functable* functable
 
     if (cur_node->node_type == TYPE_SYST) {
         switch ((int) cur_node->value) {
-            /*case OP_ASSIGN:
-                fprintf(flout, "PUSH bx\n");
-                if (cur_node -> right -> value == (int) cur_node -> value)
-                    fprintf(flout, "PUSH %d; num\n", (int) cur_node -> value);
-                else
-                    fprintf(flout, "PUSH %.3lf; num\n", cur_node -> value);
-
-                if ((temp =  Find_in_GV( Var_array.var[(int) cur_node->value].name)) + 1) {
-                    fprintf(flout, "PUSH %d\n", temp);
-                }
-                else {
-                    strcpy(GVar_array.var[GVar_array.size].name, Var_array.var[(int) cur_node->left->value].name);
-                    fprintf(flout, "PUSH %d\n", GVar_array.size++);
-                }
-
-
-                fprintf(flout, "PUSH bp\n");
-
-                fprintf(flout, "ADD\n");
-                fprintf(flout, "POP bx\n");
-                fprintf(flout, "POP [bx]\n");
-                fprintf(flout, "POP bx\n\n\n");
-                break; */
-
+            
             case OP_GETFUNK:
 
                 Walk_around_the_tree(codebuf, cur_node->left, functable) ;
@@ -774,19 +709,19 @@ void Walk_around_the_tree(codeBuf* codebuf, Node* cur_node, Functable* functable
 
         if (functable -> size < functable -> maxsize){
             strcpy(functable -> func[functable->size].name, Fun_array.var[(int) cur_node->value].name);
-            functable -> func[functable->size++].offset = codebuf -> size + 0x400080;
+            functable -> func[functable->size++].offset = codebuf -> size + BASE_LOAD_ADDRES + 0x80;
             if(strcmp(Fun_array.var[(int) cur_node->value].name, "main") == 0){
                 int temp = datasize;
-                sprintf(codebuf -> buffer + codebuf -> size, 
-                        "\x48\x81\xec%c%c%c%c"
-                        "\x48\x89\xe5"
-                        "\x49\x89\xe6", 
-                        *(char*)&temp, *((char*)&temp + 1),
-                        *((char*)&temp + 2), *((char*)&temp + 3)); 
-                codebuf -> size += 13;
+                
+                char main[] =  "\x48\x81\xec\x00\x00\x00\x00\x48\x89\xe5\x49"
+                                "\x89\xe6\x9b\xdb\xe3";
+                     *(int*)(main+3) = temp;
+
+                    CopyInBuf(codebuf, main,  16);
                 //sub rsp, datasize
                 //mov rbp, rsp
                 //mov r14, rsp
+                //finit
             }
         }
 
@@ -794,9 +729,8 @@ void Walk_around_the_tree(codeBuf* codebuf, Node* cur_node, Functable* functable
             Get_GetArgs(codebuf, cur_node->left, (int) cur_node->value);
 
         In_Function(codebuf, cur_node->right, (int) cur_node->value, functable);
-        char end[] = {"\xb8" "\x3c" "\x00" "\x00" "\x00" "\x48" "\x31" "\xff" "\x0f" "\x05"};
-        memcpy(codebuf -> buffer + codebuf -> size, end, 10);
-        codebuf -> size += 10;
+        char end[] = "\xb8\x3c\x00\x00\x00\x48\x31\xff\x0f\x05";
+        CopyInBuf(codebuf, end,  10);
         }
 
        

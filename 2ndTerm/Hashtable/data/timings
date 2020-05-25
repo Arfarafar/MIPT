@@ -1,0 +1,24 @@
+First without Optimization: 
+real	0m31,075s
+user	0m30,082s
+sys		0m0,964s
+
+Second with no Recur changed by loop:
+real	0m29,830s
+user	0m29,058s
+sys		0m0,760s
+
+Third with asm opt:
+
+real	0m24,689s
+user	0m23,918s
+sys		0m0,768s
+
+
+last opt:
+
+real	0m22,990s
+user	0m22,365s
+sys		0m0,620s
+
+

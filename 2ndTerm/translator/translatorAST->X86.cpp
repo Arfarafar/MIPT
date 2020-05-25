@@ -63,8 +63,6 @@ int main(int argc, const char* argv[]) {
     codeBuf* codebuf = Create_codeBuf(MAXCODELEN);
 
 
-
-
     ADD_printf(codebuf, functable);
     Walk_around_the_tree(codebuf, head_node, functable);
     printf("sizecur:%d datasize:%d", cur_datasize, datasize);
@@ -80,7 +78,6 @@ int main(int argc, const char* argv[]) {
 
     fwrite(elfHeader, 1, 0x80, flout);
     fwrite(codebuf -> buffer, 1, codebuf -> size, flout);
-
 
 
     fclose(flout);

@@ -381,7 +381,7 @@ void GetE(codeBuf* codebuf, Node* cur_node , int key, Functable* functable){
                             "\x9b"  						// fwait
                             "\xdf\x39" 						// fistp qword[rcx]
                             "\x48\x8b\x01";  				// mov rax, [rcx]
-                            *(int*)(pow + 9) = temp;
+                            *(int*)(pow + 6) = temp;
                             CopyInBuf(codebuf, pow,  27); 
                    
                         break;

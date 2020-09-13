@@ -1,0 +1,1 @@
+{;{$factorial{,@{mouse}}{op{if{=={mouse}{1}}{if-else{op{ret{1}@}@}@}}{op{ret{*{mouse}{$factorial{,@{-{mouse}{1}}}@}}@}@}}}{;{$main@{op{get{mouse}@}{op{={mouse}{$factorial{,@{mouse}}@}}{op{put{mouse}@}@}}}}@}}

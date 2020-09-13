@@ -114,7 +114,7 @@ public:
     }
 
 
-    Cell<T>* Find_the_freaquest(){
+    Cell<T>* Find_the_leastfreaquent(){
 
         size_t minfreq = SIZE_MAX;
         Cell<T>* cell = nullptr;

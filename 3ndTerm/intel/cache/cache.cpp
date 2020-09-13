@@ -61,14 +61,14 @@ int Do_LFU_cache(Cache_t<T>& cache, Requestbuf_t& requestbuf, int capacity_of_ha
             hashtable.Add_new_element(requestbuf[i], cache.getSize() - 1);
         }
         else if (cell) {
-            Cell<T>* cell_toreplace = hashtable.Find_the_freaquest();
+            Cell<T>* cell_toreplace = hashtable.Find_the_leastfreaquent();
             cell -> index_ =  cell_toreplace -> index_;
             cell_toreplace -> index_ = -1;
 
             cache.Replace_in_cache(requestbuf[i], cell -> index_);
         }
         else {
-            cell = hashtable.Find_the_freaquest();
+            cell = hashtable.Find_the_leastfreaquent();
 
             size_t index = cell -> index_;
             cell -> index_ = -1;

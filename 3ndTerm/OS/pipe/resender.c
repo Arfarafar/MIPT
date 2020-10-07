@@ -65,8 +65,6 @@ void File_Translator(char* filename){
     char uniqfifo[LENGTH_UNIQFIFONAME] = "";
     
     int reallength = 0;
-    char indicator = 0;
-
 
     read(connectFd, buf, SIZEOFPID_T);
 
@@ -76,26 +74,13 @@ void File_Translator(char* filename){
     snprintf(uniqfifo, LENGTH_UNIQFIFONAME, UNIQFIFONAME, (long)pid);
 
     int filetranslatorFd = Openfd(uniqfifo, O_WRONLY | O_NONBLOCK, "file translatorFd open");
-    
-
     DisableNONBLOCK(filetranslatorFd);
 
-	while(!indicator){
-		reallength = fread(buf, SIZEOFCHAR,  PIPE_BUF - 1, flin);
 
-		if (reallength < PIPE_BUF - 1){
-			buf[PIPE_BUF - 1] = 1;
-			for(int i = reallength; i < PIPE_BUF - 1; i++ ){
-				buf[i] = 0;
-			}
-			indicator = 1;
-		}
-		else 
-			buf[PIPE_BUF - 1] = 0;
-
+	while(reallength = fread(buf, SIZEOFCHAR,  PIPE_BUF, flin) == PIPE_BUF){
 		write(filetranslatorFd, buf, PIPE_BUF);
-
 	}
+	write(filetranslatorFd, buf, reallength);
 	
 	Closefd(connectFd,			"connectFd close");
 	Closefd(filetranslatorFd,   "filetranslatorFd close");
@@ -111,6 +96,7 @@ void File_Receiver(){
 	
 	char buf[PIPE_BUF] = "";
     int indicator = 0;
+    int reallength = 0;
     
     char uniqfifo[LENGTH_UNIQFIFONAME] = "";
     pid_t pid = getpid();
@@ -141,19 +127,10 @@ void File_Receiver(){
     }
     	
 
-    indicator = 0;
-	while(indicator == 0) {
-
-		if (!read(filereceiverFd, buf,  PIPE_BUF)){
-			break;
-		}
-		
-
-		write(STDOUT_FILENO, buf , PIPE_BUF - 1);
-		indicator = buf[PIPE_BUF - 1];
-		
-
+	while(reallength = read(filereceiverFd, buf,  PIPE_BUF) == PIPE_BUF ) {	
+		write(STDOUT_FILENO, buf , PIPE_BUF);	
 	}
+	write(STDOUT_FILENO, buf, reallength);
 
 	Closefd(filereceiverFd, "rewriteFd close");
 	Closefd(connectFd, "contactFd close");

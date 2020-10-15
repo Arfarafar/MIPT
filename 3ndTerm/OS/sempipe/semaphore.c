@@ -45,25 +45,25 @@ void File_Translator(char* filename, int semid, void* addr){
 	opINIT(0, 0, 0, 0) //register yourself if no one else is here
 	opINIT(1, 0, 1, SEM_UNDO)
 	semop(semid, sops, 2);
-	printf("1\n");
+
 
 
 	opINIT(0, 4, 0, 0); //to be sure there is no pair from previous translator
 	semop(semid, sops, 1);
-	printf("2\n");
+	
 
 	opINIT(0, 0, 1, SEM_UNDO); //before register you are alive
 	semop(semid, sops, 1);
-	printf("2.5\n");
+
 
 	opINIT(0, 1, -2, 0) //check your pair at the same step
-	opINIT(1, 1, 1, 0)
+	opINIT(1, 1, 2, 0)
 	semop(semid, sops, 2);
-	printf("3\n");
+	
 
 	opINIT(0, 4, 1, SEM_UNDO); //register that you are alive
 	semop(semid, sops, 1);
-	printf("4\n");
+	
 
 
 
@@ -109,24 +109,24 @@ void File_Receiver(int semid, void* addr){
 	opINIT(0, 1, 0, 0) //register yourself if no one else is here
 	opINIT(1, 1, 1, SEM_UNDO)
 	semop(semid, sops, 2);
-	printf("1\n");
+	
 
 	opINIT(0, 4, 0, 0); //to be sure there is no pair from previous receiver
 	semop(semid, sops, 1);
-	printf("2\n");
+	
 
 	opINIT(0, 1, 1, SEM_UNDO); //before register you are alive
 	semop(semid, sops, 1);
-	printf("2.5\n");
+	
 
 	opINIT(0, 0, -2, 0) //check your pair has registered to
-	opINIT(1, 0, 1, 0)
+	opINIT(1, 0, 2, 0)
 	semop(semid, sops, 2);
-	printf("3\n");
+	
 
 	opINIT(0, 4, 1, SEM_UNDO); //register that you are alive
 	semop(semid, sops, 1);
-	printf("4\n");
+	
 
 
 	

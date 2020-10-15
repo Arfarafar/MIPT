@@ -18,6 +18,7 @@ struct M{
 int main(int argc, char* argv[]){
 	if (argc != 2){
 		printf("Invalid argc\n");
+		return 1;
 	}
 
 	char* extstr;
@@ -25,8 +26,11 @@ int main(int argc, char* argv[]){
 
 	struct M msg = {1};
 	
+	
 
 	int msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666);
+
+
 
 	for(long i = 1; i < chnum + 1; i++){
 
@@ -39,7 +43,8 @@ int main(int argc, char* argv[]){
 				return 1;
 			}
 
-			printf("m_pid %d; p_ppid %d; number %ld \n", getpid(), getppid(), i);
+
+			write(STDOUT_FILENO, , sizeoflong);	
 			msg.type = i + 1;
 			msgsnd(msgid, &msg , 0, 0);
 			return 0;
@@ -48,13 +53,15 @@ int main(int argc, char* argv[]){
 		
 	}
 
-	printf(" Я закончил\n");
 	msgsnd(msgid, &msg , 0, 0);
 	
+	if (!(msgrcv(msgid, &msg, 0, chnum + 1, 0) + 1)){
+				perror("rcv");
+		}
+	if (msgctl(msgid, IPC_RMID, NULL) == -1) {
+			printf("не закрыл; id: %d\n", msgid);
+	}
 
-
-	while(wait(NULL)+1) {}
-
-	msgctl(msgid, IPC_RMID, NULL);
+	
 	return 0;
 }

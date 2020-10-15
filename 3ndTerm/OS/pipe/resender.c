@@ -13,7 +13,8 @@
 
 #define CONNECTIVE_FIFO_PATH "fifos/connection"
 #define UNIQFIFONAME "fifos/process.%ld"
-#define LENGTH_UNIQFIFONAME (sizeof(UNIQFIFONAME) + 15)
+#define LENGTH_UNIQFIFONAME (sizeof(UNIQFIFONAME) + 25)
+#define WAITSECONDS 100
 
 const int SIZEOFCHAR = sizeof(char);
 const int SIZEOFPID_T = sizeof(pid_t);
@@ -77,10 +78,13 @@ void File_Translator(char* filename){
     DisableNONBLOCK(filetranslatorFd);
 
 
-	while(reallength = fread(buf, SIZEOFCHAR,  PIPE_BUF, flin) == PIPE_BUF){
+	while((reallength = fread(buf + 1, SIZEOFCHAR,  PIPE_BUF - 1, flin)) == PIPE_BUF - 1 ){
+		//sleep(1);
+		buf[0] = 0;
 		write(filetranslatorFd, buf, PIPE_BUF);
 	}
-	write(filetranslatorFd, buf, reallength);
+	buf[0] = 1;
+	write(filetranslatorFd, buf, reallength + 1);
 	
 	Closefd(connectFd,			"connectFd close");
 	Closefd(filetranslatorFd,   "filetranslatorFd close");
@@ -96,7 +100,7 @@ void File_Receiver(){
 	
 	char buf[PIPE_BUF] = "";
     int indicator = 0;
-    int reallength = 0;
+    int reallength = PIPE_BUF;
     
     char uniqfifo[LENGTH_UNIQFIFONAME] = "";
     pid_t pid = getpid();
@@ -110,27 +114,29 @@ void File_Receiver(){
     
     write(connectFd, &pid, SIZEOFPID_T);
  
- 	int i = 0;
- 	while(i < 100)
- 	{
- 		sleep(1);
- 		ioctl(filereceiverFd, FIONREAD, &indicator);
-	    if (indicator){
-	    	break;
-	    }
-	    i++;
- 	}
-
-    if (i == 100){
-    	printf("uniqfifo writer is dead or going too slow\n");
-    	exit(1);
-    }
+ 	
     	
 
-	while(reallength = read(filereceiverFd, buf,  PIPE_BUF) == PIPE_BUF ) {	
-		write(STDOUT_FILENO, buf , PIPE_BUF);	
+	while(reallength == PIPE_BUF && !buf[0] ) {	
+		int i = 0;
+ 		while(i < WAITSECONDS)
+	 	{
+	 		ioctl(filereceiverFd, FIONREAD, &indicator);
+		    if (indicator){
+		    	break;
+		    }
+		    i++;
+		    sleep(1);
+	 	}
+
+	    if (i == WAITSECONDS){
+	    	printf("uniqfifo writer is dead or going too slow\n");
+	    	exit(1);
+	    }
+		reallength = read(filereceiverFd, buf,  PIPE_BUF);
+		write(STDOUT_FILENO, buf + 1 , reallength - 1);	
+
 	}
-	write(STDOUT_FILENO, buf, reallength);
 
 	Closefd(filereceiverFd, "rewriteFd close");
 	Closefd(connectFd, "contactFd close");

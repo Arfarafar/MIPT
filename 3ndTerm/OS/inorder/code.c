@@ -7,7 +7,7 @@
 #include <sys/msg.h>
 #include <errno.h>
 
-
+#define MAXLEN 256
 
 
 struct M{
@@ -43,8 +43,19 @@ int main(int argc, char* argv[]){
 				return 1;
 			}
 
+			char buf[MAXLEN] = "";
+			int size = 0;
+			int j = i;
 
-			write(STDOUT_FILENO, , sizeoflong);	
+			buf[MAXLEN - size++] = ' ';
+			while (j > 0)
+			{
+				buf[MAXLEN - size++] = j % 10 + '0';
+				j /= 10;
+			}
+
+			write(STDOUT_FILENO, (buf + MAXLEN - size + 1), size);
+	
 			msg.type = i + 1;
 			msgsnd(msgid, &msg , 0, 0);
 			return 0;

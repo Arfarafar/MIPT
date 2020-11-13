@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
 			}
 
 			if(c == EOF)
-				break;
+				exit(0);
 			
 			write(STDOUT_FILENO, &c , 1);
 				

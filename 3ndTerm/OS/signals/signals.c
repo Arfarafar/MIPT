@@ -72,28 +72,29 @@ int main(int argc, char* argv[]){
 		
 
 		unsigned char buffer ;
+		int reallength;
+		while(reallength = fread(&buffer, 1, 1, flin)){
 
-		do {
-			unsigned char buffer = EOF;
-			fread(&buffer, 1, 1, flin);
-			unsigned char tmp = buffer;
-
+			sigsuspend(&blockingMask);
+			kill(parent_id, SIGUSR1);
 
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
 			{
 				sigsuspend(&blockingMask);
-				if (tmp & firstbitMASK){
+				if (buffer & firstbitMASK){
 					kill(parent_id, SIGUSR1);
 				}
 				else{
 					kill(parent_id, SIGUSR2);
 				} 
 				
-				tmp <<= 1;
+				buffer <<= 1;
 			
 			}
 			
-		} while(buffer != EOF);
+		} 
+		sigsuspend(&blockingMask);
+		kill(parent_id, SIGUSR2);
 
 
 	}
@@ -112,6 +113,12 @@ int main(int argc, char* argv[]){
 		while(1){
 			char c = 0;
 
+			sigsuspend(&blockingMask);
+			if(bit == 0){
+				exit(0);
+			}
+			kill(child_id, SIGUSR1);
+
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
 			{	
 				sigsuspend(&blockingMask);
@@ -121,8 +128,6 @@ int main(int argc, char* argv[]){
 				kill(child_id, SIGUSR1);
 			}
 
-			if(c == EOF)
-				exit(0);
 			
 			write(STDOUT_FILENO, &c , 1);
 				

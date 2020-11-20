@@ -60,11 +60,7 @@ int main(int argc, char* argv[]){
 		act.sa_handler = translator;
 		sigaction(SIGUSR1, &act, NULL);
 
-		act.sa_handler = child;
-		sigaction(SIGCHLD, &act, NULL);
-
-		if((parent_id = getppid()) == 1)
-			exit(1);
+		parent_id = getppid();
 		
 		FILE* flin = fopen(argv[1], "rb");
 		

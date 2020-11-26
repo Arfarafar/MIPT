@@ -67,7 +67,7 @@ void File_Translator(char* filename){
     
     int reallength = 0;
 
-    read(connectFd, buf, SIZEOFPID_T);
+    read(connectFd, buf, SIZEOFPID_T);`
 
 
     pid_t pid = *(pid_t*)buf;

@@ -63,8 +63,17 @@ void TransferDump(Transfer* transfer, int i, char* name){
 
     printf("операция %s\n", name);
     printf("структура номер %d\n", i);
-    printf("чтение из %d\n", transfer[i].in);
-    printf("запись в %d\n", transfer[i].out);
+    struct stat stat1;
+
+    if(transfer[i].out != -666){
+        fstat(transfer[i].out, &stat1);
+        printf("чтение из st_ino: %ld\n", stat1.st_ino);
+    }
+
+    if (transfer[i].in != -666){
+        fstat(transfer[i+1].in, &stat1);
+        printf("запись в st_ino: %ld\n", stat1.st_ino);
+    }
     printf("размер буфера %d\n", transfer[i].buf_size);
     printf("текущая позиция %d\n", transfer[i].cur_pos);
     printf("последняя позиция %d\n", transfer[i].last_pos);
@@ -75,13 +84,14 @@ void TransferDump(Transfer* transfer, int i, char* name){
 
 
 void Make_fifo(const char* PATH){
-	//umask(0);                          
-	if (mkfifo(PATH, 0666) == -1 && errno != EEXIST){
-        printf("not make FIFO %s !!\n", PATH);
+	//umask(0); 
+    int   ret = 0;                       
+	if ((ret = mkfifo(PATH, 0666)) == -1 && errno != EEXIST){
+        printf("cannot make FIFO %s !!\n", PATH);
     	exit(1);
 	}
-    printf("make FIFO %s\n", PATH);
-    fflush(0);
+   /// printf("make FIFO %s %d\n", PATH, ret);
+   /// fflush(0);
 }
 
 void Closefd(int fd, const char* msg){
@@ -102,6 +112,22 @@ int Openfd(const char* name, int flags, const char* msg){
 	    perror(name);
 	    exit(1);
 	}
+
+    struct stat stat1;
+    if (fstat(Fd, &stat1) < 0)
+        return -1;
+
+
+    switch (flags) {
+        case O_RDWR | O_NONBLOCK:   printf("open FIFO %s with flag O_RDWR %d   st_dev: %ld st_ino: %ld\n", name, flags, stat1.st_dev, stat1.st_ino);
+                break;
+        case O_RDONLY | O_NONBLOCK: printf("open FIFO %s with flag O_RDONLY %d   st_dev: %ld st_ino: %ld\n", name, flags,  stat1.st_dev, stat1.st_ino);
+                break;
+        default: printf("open FIFO %s with noflags %d   st_dev: %ld st_ino: %ld\n", name, flags, stat1.st_dev, stat1.st_ino);
+    }
+
+
+    fflush(0);
 	return Fd;
 }
 
@@ -129,6 +155,7 @@ int main(int argc, char* argv[]){
 		return 0;
 	}
 
+
     int semid = semget(ftok(argv[0], 10), 2, IPC_CREAT | 0666);
     if( semid == -1){
         perror("semid");
@@ -140,7 +167,8 @@ int main(int argc, char* argv[]){
 
 	char* extstr;
 	int nch = (int)strtol(argv[1], &extstr, 0);
-    printf("nch %d \n", nch);   
+    ///printf("nch %d \n", nch);  
+    /// printf("O_RDONLY %d O_RDWR %d\n", O_RDONLY, O_RDWR);    
 
     int reallength = 0;
 
@@ -166,8 +194,8 @@ int main(int argc, char* argv[]){
 		if ( getppid() == 1)
 			exit(1);
 
-        printf("child %d out\n", 0);  
-             fflush(0);
+        ///printf("child %d out\n", 0);  
+        ///     fflush(0);
 
 		OPEN_FIFO_BLOCK(1, out, O_RDWR)
 		
@@ -180,11 +208,19 @@ int main(int argc, char* argv[]){
 
         
         opSEM(0, -1, 0)
-        printf("начал печать %d\n", 0 );
+        ///printf("начал печать %d\n", 0 );
+
+        ///struct stat stat1;
+        ///if (fstat(out, &stat1) < 0)
+        ///    return -1;
+   
+        ///printf("файл куда пишу: st_dev: %ld st_ino: %ld\n", stat1.st_dev, stat1.st_ino);
+        ///fflush(0);
 
 		while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
-          printf("я %d перекинул %d байт\n", 0, reallength);
-          fflush(0);
+
+          ///printf("я %d перекинул %d байт\n", 0, reallength);
+          ///fflush(0);
         };   //крит секция зеркальная начальной родительской
          printf("Сплайс закрылся %d\n", 0);
         Closefd(out, "");
@@ -210,20 +246,20 @@ int main(int argc, char* argv[]){
 			if ( getppid() == 1)
 				exit(1);
 
-            printf("child %d in\n", i);   
-            fflush(0);
+            ///printf("child %d in\n", i);   
+            ///fflush(0);
 			OPEN_FIFO_BLOCK(2*i, in, O_RDONLY)
-            printf("child %d out\n", i);  
-             fflush(0);
+            ///printf("child %d out\n", i);  
+             ///fflush(0);
 			OPEN_FIFO_BLOCK(2*i+1, out, O_RDWR)
 
             opSEM(0, -1, 0) //начало крит секции чтобы родитель успел открыть все фд до нее
 
-            printf("начал печать %d\n", i );
+           /// printf("начал печать %d\n", i );
 
-            while(splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
-             printf("я %d перекинул %d байт\n", i, reallength);
-            fflush(0);
+            while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
+            /// printf("я %d перекинул %d байт\n", i, reallength);
+            ///fflush(0);
             };   //конец крит секции чтобы сплайс не вернул 0 изза того что конца на запись нет
 
             printf("Сплайс закрылся %d\n", i );
@@ -248,21 +284,21 @@ int main(int argc, char* argv[]){
 
 	for (int i = 1; i < nch; ++i){
         
-		OPEN_FIFO_NONBLOCK(2*i,     transfer[0].in,  O_WRONLY)
-        OPEN_FIFO_NONBLOCK(2*i+1,   transfer[0].out, O_RDONLY)
+		OPEN_FIFO_NONBLOCK(2*i,     transfer[i].in,  O_RDWR)
+        OPEN_FIFO_NONBLOCK(2*i+1,   transfer[i].out, O_RDONLY)
     
         transfer[i].buf_size = (int) pow (3, nch-i)*1024;
 		transfer[i].buf = (char*) calloc (transfer[i].buf_size, 1);
 
 	}
     snprintf(startpoint, LENGTH_UNIQFIFONAME, "%d", 2*nch);                                                  \
-    transfer[nch].in = STDOUT_FILENO;
+    transfer[nch].in = open("xx", O_WRONLY | O_CREAT , 0666);
 
 
      // для род процесса начиная с начала и до этого семопа     
      // крит секция чтобы успеть открыть все файл-дескрипторы                 
     opSEM(0, nch, 0)
-    printf("Я открыл всем детям семафоры\n");
+   /// printf("Я открыл всем детям семафоры\n");
 
     fd_set rd_set;
     fd_set wr_set;
@@ -270,7 +306,7 @@ int main(int argc, char* argv[]){
     int endrd = 0;
     int endwr = 1;
 
-    while (endrd + endwr < 2*nch){
+    while (endrd + endwr <= 2*nch){
 
         FD_ZERO(&rd_set);
         FD_ZERO(&wr_set);
@@ -285,7 +321,7 @@ int main(int argc, char* argv[]){
                 nfds = transfer[i].out + 1;
         }
 
-        for (int i = endwr; i < nch; ++i)
+        for (int i = endwr; i <= nch; ++i)
         {
 
             FD_SET(transfer[i].in, &wr_set);
@@ -294,12 +330,19 @@ int main(int argc, char* argv[]){
                 nfds = transfer[i].in + 1;
         }
 
-        sleep(1);
-        int cnt = -22;
+        ///sleep(1);
+        ///int cnt = -22;
+
+        ///struct stat stat1;
+        ///if (fstat(transfer[0].out, &stat1) < 0)
+        ///    return -1;
+   
+        ///printf("файл откуда читаю: st_dev: %d st_ino: %d\n", stat1.st_dev, stat1.st_ino);
+        //////fflush(0);
        
-        ioctl(transfer[0].out, FIONREAD, &cnt);
-        printf("я в сете: %d во мне %d байт \n", FD_ISSET(transfer[0].out, &rd_set), cnt);
-        fflush(0);
+        ///ioctl(transfer[0].out, FIONREAD, &cnt);
+        ///printf("я в сете: %d во мне %d байт \n", FD_ISSET(transfer[0].out, &rd_set), cnt);
+        ///fflush(0);
 
         int readytoread = select(nfds, &rd_set, NULL, NULL, NULL);
 
@@ -311,7 +354,7 @@ int main(int argc, char* argv[]){
             if(FD_ISSET(transfer[i].out, &rd_set)){
                 readytoread--;
                 reallength = 1;
-                TransferDump(transfer, i, "read");
+                TransferDump(transfer, i, "before read");
                 int distance = transfer[i].last_pos - transfer[i].cur_pos;
                 if(distance > 0)
                 {
@@ -341,7 +384,7 @@ int main(int argc, char* argv[]){
                     if( reallength && (! (transfer[i].last_pos %= transfer[i].buf_size )) )
                         transfer[i].isfull = 1;
                 }
-                TransferDump(transfer, i, "read");
+                TransferDump(transfer, i, "after read");
 
                 if(!reallength){
                         Closefd(transfer[i].out, "");
@@ -352,17 +395,18 @@ int main(int argc, char* argv[]){
 
         }
 
-        int readytowrite = select(nfds, NULL, &wr_set, NULL, NULL) + 1;
+        int readytowrite = select(nfds, NULL, &wr_set, NULL, NULL);
 
-        printf("readytowrite %d\n", readytoread);
+
+        printf("readytowrite %d\n", readytowrite);
 
         for (int i = endwr - 1; readytowrite > 0; ++i)
         {
            
-            if(FD_ISSET(transfer[i+1].in, &rd_set) || i == nch-1){
+            if(FD_ISSET(transfer[i+1].in, &wr_set)){
                 readytowrite--;
 
-                TransferDump(transfer, i, "write");
+                TransferDump(transfer, i, "before write");
 
                 int distance = transfer[i].last_pos - transfer[i].cur_pos;
                 if(distance > 0)
@@ -392,9 +436,10 @@ int main(int argc, char* argv[]){
                 else if (transfer[i].out == -666)
                 {
                     Closefd(transfer[i+1].in, "");
+                    transfer[i+1].in = -666;
                     endwr++;
                 }
-                TransferDump(transfer, i, "write");
+                TransferDump(transfer, i, "after write");
             }
 
         }

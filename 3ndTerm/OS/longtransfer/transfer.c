@@ -63,8 +63,8 @@ typedef struct {
 
 void Make_fifo(const char* PATH){
 	umask(0); 
-    int   ret = 0;                       
-	if ((ret = mkfifo(PATH, 0666)) == -1 && errno != EEXIST){
+                        
+	if ( mkfifo(PATH, 0666) == -1 && errno != EEXIST){
         printf("cannot make FIFO %s !!\n", PATH);
     	exit(1);
 	}
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]){
 
 		while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
 
-        };   //крит секция зеркальная начальной родительской
+        };   //с этим кодом гоняется родитель
       
         Closefd(out, "");
         Closefd(in, "");
@@ -180,8 +180,8 @@ int main(int argc, char* argv[]){
 
         opSEM(1, -1, 0)
 
-		exit(0);                      // КРИТ секция, родитель с ребенком гоняются
-	}                                 // за то произойдет передача или нет одновременное выполнение 
+		exit(0);                      // КРИТ секция, родитель с ребенком 
+	}                                 // за то произойдет передача или нет. одновременное выполнение 
                                       // этой строчки с работающей передачей прервет передачу.
 
 
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]){
 
 		child_id = fork();
 
-		if (child_id == 0){          // крит секция с форка до семопа for what??
+		if (child_id == 0){          // крит секция с форка до prctl
             
 			prctl(PR_SET_PDEATHSIG, SIGCHLD);
 			if ( getppid() == 1)
@@ -200,11 +200,11 @@ int main(int argc, char* argv[]){
 			OPEN_FIFO_BLOCK(2*i, in, O_RDONLY)
 			OPEN_FIFO_BLOCK(2*i+1, out, O_RDWR)
 
-            opSEM(0, -1, 0) //начало крит секции чтобы родитель успел открыть все фд до нее
+            opSEM(0, -1, 0)
 
 
             while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
-            };   //конец крит секции чтобы сплайс не вернул 0 изза того что конца на запись нет
+            };  
 
           
             Closefd(out, "");
@@ -239,7 +239,7 @@ int main(int argc, char* argv[]){
     transfer[nch].in = STDOUT_FILENO;
 
 
-     // для род процесса начиная с начала и до этого семопа     
+     // для род процесса начиная с fork и до этого семопа     
      // крит секция чтобы успеть открыть все файл-дескрипторы                 
     opSEM(0, nch, 0)
 

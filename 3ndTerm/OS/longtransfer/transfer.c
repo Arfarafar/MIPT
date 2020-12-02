@@ -6,15 +6,11 @@
 #include <limits.h>
 #include <stdio.h>
 #include <math.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
 #include <errno.h>        
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
+
 
 
 
@@ -33,19 +29,6 @@
     OPEN_FIFO_NONBLOCK(n, inout, flags)      \
 	DisableNONBLOCK(inout);
 
-
-#define opINIT(n, sem, op, flg) sops[n].sem_num = sem;                  \
-                                sops[n].sem_op = op;                    \
-                                sops[n].sem_flg = flg;                  
-
-
-#define opSEM(sem, op, flg)     opINIT(0, sem, op, flg)                 \
-                                semop(semid, sops, 1);
-
-
-int initSem(int semId, int semNum, int initVal){
-    return semctl(semId, semNum, SETVAL, initVal);
-}
 
 
 typedef struct {
@@ -104,11 +87,15 @@ void DisableNONBLOCK(int fd){
 }
 
 
-void child(int sig){
-	exit(0);
+
+void CloseParent_sFd(Transfer* transfer, int ch){
+    Closefd(transfer[0].out, "");
+    for (int i = 1; i <= ch; ++i)
+    {
+       Closefd(transfer[i].in, "");
+       Closefd(transfer[i].out, "");
+    }
 }
-
-
 
 
 int main(int argc, char* argv[]){
@@ -119,14 +106,7 @@ int main(int argc, char* argv[]){
 	}
 
 
-    int semid = semget(ftok(argv[0], 10), 2, IPC_CREAT | 0666);
-    if( semid == -1){
-        perror("semid");
-        exit(1);
-    }
-
-    initSem(semid, 1, 0);
-    initSem(semid, 0, 0);
+    
 
 	char* extstr;
 	int nch = (int)strtol(argv[1], &extstr, 0);
@@ -136,27 +116,24 @@ int main(int argc, char* argv[]){
 
 	char uniqfifo[LENGTH_UNIQFIFONAME] = UNIQFIFONAME;
 
-	struct sigaction act = {};
-	act.sa_handler = child;
-	sigaction(SIGCHLD, &act, NULL);
 
 	int in = 0;
 	int out = 0;
+    Transfer* transfer = (Transfer*) calloc(sizeof(Transfer), nch + 1);
 
 	char* startpoint = uniqfifo + sizeof(UNIQFIFONAME) - 1 ;
 
-    struct sembuf sops[1];
+
+    OPEN_FIFO_NONBLOCK(1, transfer[0].out, O_RDONLY)
 
 	pid_t child_id = fork();
 
+
 	if (child_id == 0){	
 
-		prctl(PR_SET_PDEATHSIG, SIGCHLD);
-		if ( getppid() == 1)
-			exit(1);
+        CloseParent_sFd(transfer, 0);
 
-
-		OPEN_FIFO_BLOCK(1, out, O_RDWR)
+		OPEN_FIFO_BLOCK(1, out, O_WRONLY)
 		
 		in = open(argv[2], O_RDONLY);
 
@@ -165,83 +142,49 @@ int main(int argc, char* argv[]){
 
 		lseek(in, 0, SEEK_SET);
 
-        
-        opSEM(0, -1, 0)
-
-   
-
-		while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
-
-        };   //крит секция зеркальная начальной родительской
+		while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {}; 
       
         Closefd(out, "");
         Closefd(in, "");
 
-
-        opSEM(1, -1, 0)
-
-		exit(0);                      // КРИТ секция, родитель с ребенком гоняются
-	}                                 // за то произойдет передача или нет одновременное выполнение 
-                                      // этой строчки с работающей передачей прервет передачу.
-
+		exit(0);                    
+	}                               
 
 
 	
 	for (int i = 1; i < nch; ++i){
 
+        OPEN_FIFO_NONBLOCK(2*i,     transfer[i].in,  O_RDWR)
+        OPEN_FIFO_NONBLOCK(2*i+1,   transfer[i].out, O_RDONLY)
+
 		child_id = fork();
 
-		if (child_id == 0){          // крит секция с форка до семопа for what??
+		if (child_id == 0){         
             
-			prctl(PR_SET_PDEATHSIG, SIGCHLD);
-			if ( getppid() == 1)
-				exit(1);
-
+            CloseParent_sFd(transfer, i);
+			
 			OPEN_FIFO_BLOCK(2*i, in, O_RDONLY)
-			OPEN_FIFO_BLOCK(2*i+1, out, O_RDWR)
+			OPEN_FIFO_BLOCK(2*i+1, out, O_WRONLY)
 
-            opSEM(0, -1, 0) //начало крит секции чтобы родитель успел открыть все фд до нее
-
-
-            while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {
-            };   //конец крит секции чтобы сплайс не вернул 0 изза того что конца на запись нет
-
+            while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {};  
           
             Closefd(out, "");
-            Closefd(in, "");
-
-
-            opSEM(1, -1, 0)
-
+            Closefd(in, "");    
             exit(0);     
 		}
 
 
     }
     
-    Transfer* transfer = (Transfer*) calloc(sizeof(Transfer), nch + 1);
-
-    OPEN_FIFO_NONBLOCK(1, transfer[0].out, O_RDONLY)
-
-    transfer[0].buf_size = (int) pow (3, nch)*1024;
-    transfer[0].buf = (char*) calloc (transfer[0].buf_size, 1);
-
-	for (int i = 1; i < nch; ++i){
-        
-		OPEN_FIFO_NONBLOCK(2*i,     transfer[i].in,  O_RDWR)
-        OPEN_FIFO_NONBLOCK(2*i+1,   transfer[i].out, O_RDONLY)
-    
-        transfer[i].buf_size = (int) pow (3, nch-i)*1024;
-		transfer[i].buf = (char*) calloc (transfer[i].buf_size, 1);
-
-	}
     snprintf(startpoint, LENGTH_UNIQFIFONAME, "%d", 2*nch);                                                  \
     transfer[nch].in = STDOUT_FILENO;
 
+    for (int i = 0; i < nch; ++i){
+        transfer[i].buf_size = (int) pow (3, nch-i)*1024;
+        transfer[i].buf = (char*) calloc (transfer[i].buf_size, 1);
+    }
 
-     // для род процесса начиная с начала и до этого семопа     
-     // крит секция чтобы успеть открыть все файл-дескрипторы                 
-    opSEM(0, nch, 0)
+
 
     fd_set rd_set;
     fd_set wr_set;
@@ -274,9 +217,6 @@ int main(int argc, char* argv[]){
         }
 
 
-   
-       
-
         int readytoread = select(nfds, &rd_set, NULL, NULL, NULL);
 
       
@@ -292,8 +232,8 @@ int main(int argc, char* argv[]){
                 if(distance > 0)
                 {
                     reallength = read(transfer[i].out,
-                                     transfer[i].buf + transfer[i].last_pos, 
-                                     transfer[i].buf_size - transfer[i].last_pos);
+                                      transfer[i].buf + transfer[i].last_pos, 
+                                      transfer[i].buf_size - transfer[i].last_pos);
 
                     transfer[i].last_pos += reallength;
                     if(! (transfer[i].last_pos %= transfer[i].buf_size))
@@ -301,16 +241,16 @@ int main(int argc, char* argv[]){
                 }
                 else if(distance < 0){
                     reallength = read(transfer[i].out,
-                                                 transfer[i].buf + transfer[i].last_pos, 
-                                                 transfer[i].cur_pos - transfer[i].last_pos);
+                                      transfer[i].buf + transfer[i].last_pos, 
+                                      transfer[i].cur_pos - transfer[i].last_pos);
                     transfer[i].last_pos += reallength;
                     transfer[i].isfull = transfer[i].cur_pos == transfer[i].last_pos ? 1 : 0;
                 }
                 else if(!transfer[i].isfull)
                 {
                     reallength = read(transfer[i].out,
-                                         transfer[i].buf, 
-                                         transfer[i].buf_size);
+                                      transfer[i].buf, 
+                                      transfer[i].buf_size);
                     transfer[i].last_pos = reallength;
                     transfer[i].cur_pos = 0;
 
@@ -319,6 +259,9 @@ int main(int argc, char* argv[]){
                 }
 
                 if(!reallength){
+                        if (i != endrd)
+                            exit(0);
+
                         Closefd(transfer[i].out, "");
                         transfer[i].out = -666;
                         endrd++;
@@ -343,7 +286,6 @@ int main(int argc, char* argv[]){
                     transfer[i].cur_pos += write(transfer[i+1].in,
                                                  transfer[i].buf + transfer[i].cur_pos, 
                                                  transfer[i].last_pos - transfer[i].cur_pos);
-                   
                     transfer[i].isfull = 0;
                 }
                 else if(distance < 0){
@@ -356,9 +298,8 @@ int main(int argc, char* argv[]){
                 else if(transfer[i].isfull)
                 {
                     transfer[i].cur_pos += write(transfer[i+1].in,
-                                             transfer[i].buf + transfer[i].cur_pos, 
-                                             transfer[i].buf_size - transfer[i].cur_pos);
-
+                                                 transfer[i].buf + transfer[i].cur_pos, 
+                                                 transfer[i].buf_size - transfer[i].cur_pos);
                     transfer[i].cur_pos %= transfer[i].buf_size;
                     transfer[i].isfull = 0;
                 }
@@ -374,8 +315,6 @@ int main(int argc, char* argv[]){
         }
 
     }
-
-    opSEM(1, nch, 0)
 
     return 0;
 }

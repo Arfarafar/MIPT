@@ -72,8 +72,7 @@ int main(int argc, char* argv[]){
 		int reallength = 0;
 		while(reallength = fread(&buffer, 1, 1, flin)){
 
-			kill(parent_id, SIGUSR1);//крит секция от кил до сигсаспенд за то чтобы не отправить сигнал дважды
-											//и родитель успел его обработать
+			kill(parent_id, SIGUSR1);
 			sigsuspend(&blockingMask);
 			
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
@@ -116,8 +115,7 @@ int main(int argc, char* argv[]){
 			if(bit == 0){
 				exit(0);
 			}
-			kill(child_id, SIGUSR1); // крит секция от sigsuspend до kill за то чтобы считать бит информации 
-								// только после того как он был выставлен ребенком а не до
+			kill(child_id, SIGUSR1); 
 
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
 			{	

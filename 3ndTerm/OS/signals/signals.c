@@ -72,26 +72,27 @@ int main(int argc, char* argv[]){
 		int reallength = 0;
 		while(reallength = fread(&buffer, 1, 1, flin)){
 
-			sigsuspend(&blockingMask);
 			kill(parent_id, SIGUSR1);//крит секция от кил до сигсаспенд за то чтобы не отправить сигнал дважды
 											//и родитель успел его обработать
-
+			sigsuspend(&blockingMask);
+			
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
 			{
-				sigsuspend(&blockingMask);
+				
 				if (buffer & firstbitMASK){
 					kill(parent_id, SIGUSR1);
 				}
 				else{
 					kill(parent_id, SIGUSR2);
 				} 
-				
+				sigsuspend(&blockingMask);
 				buffer <<= 1;
+				
 			
 			}
 			
 		} 
-		sigsuspend(&blockingMask);
+		
 		kill(parent_id, SIGUSR2);
 
 
@@ -100,14 +101,13 @@ int main(int argc, char* argv[]){
 	else{
 		
 		act.sa_handler = receiver;
-		sigaction(SIGUSR1, &act, NULL);	//крит секция от форка до кила за то чтобы успеть повесить обработчик
+		sigaction(SIGUSR1, &act, NULL);	
 		sigaction(SIGUSR2, &act, NULL);
 
 		sigdelset(&blockingMask, SIGUSR1);
 		sigdelset(&blockingMask, SIGUSR2);
 		
-		kill(child_id, SIGUSR1);  // крит секция от kill до sigsuspend за то чтобы считать бит информации 
-								// только после того как он был выставлен ребенком а не до
+		
 
 		while(1){
 			char c = 0;
@@ -116,7 +116,8 @@ int main(int argc, char* argv[]){
 			if(bit == 0){
 				exit(0);
 			}
-			kill(child_id, SIGUSR1);
+			kill(child_id, SIGUSR1); // крит секция от sigsuspend до kill за то чтобы считать бит информации 
+								// только после того как он был выставлен ребенком а не до
 
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
 			{	

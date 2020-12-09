@@ -10,30 +10,20 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 
 
 
-
-#define UNIQFIFONAME "process."
-#define LENGTH_UNIQFIFONAME (sizeof(UNIQFIFONAME) + 10)
-
-
-#define OPEN_FIFO_NONBLOCK(n, inout, flags)   \
-    snprintf(startpoint, LENGTH_UNIQFIFONAME, "%d", n);         \
-    Make_fifo(uniqfifo);                                        \
-    inout = Openfd(uniqfifo, flags  | O_NONBLOCK, #inout);      
-
-
-
-#define	OPEN_FIFO_BLOCK(n, inout, flags)									\
-    OPEN_FIFO_NONBLOCK(n, inout, flags)      \
-	DisableNONBLOCK(inout);
+enum {
+    RD = 0,
+    WR = 1
+};
 
 
 
 typedef struct {
-	int in;
-    int out;
+	int in[2];
+    int out[2];
 	char* buf;
     int buf_size;
     int cur_pos;
@@ -43,17 +33,6 @@ typedef struct {
 
 
 
-
-void Make_fifo(const char* PATH){
-	umask(0); 
-    int   ret = 0;                       
-	if ((ret = mkfifo(PATH, 0666)) == -1 && errno != EEXIST){
-        printf("cannot make FIFO %s !!\n", PATH);
-    	exit(1);
-	}
-  
-}
-
 void Closefd(int fd, const char* msg){
 	if (close(fd) == -1){ 
 		perror(msg) ;
@@ -61,41 +40,18 @@ void Closefd(int fd, const char* msg){
 	}
 }
 
-int Openfd(const char* name, int flags, const char* msg){
-
-	int Fd = open(name, flags);
-	if (Fd == -1){
-        if(errno == ENXIO){
-            printf("ENXIO\n");
-            fflush(0);
-        }
-	    perror(name);
-	    exit(1);
-	}
-
-   
-	return Fd;
-}
-
-void DisableNONBLOCK(int fd){
-	int flags;
-
-    flags = fcntl(fd, F_GETFL);
-	flags &= ~O_NONBLOCK;             
-	fcntl(fd, F_SETFL, flags);
-
-}
-
 
 
 void CloseParent_sFd(Transfer* transfer, int ch){
-    Closefd(transfer[0].out, "");
+    Closefd(transfer[0].out[RD], "");
     for (int i = 1; i <= ch; ++i)
     {
-       Closefd(transfer[i].in, "");
-       Closefd(transfer[i].out, "");
+       Closefd(transfer[i].in[WR], "");
+       Closefd(transfer[i].out[RD], "");
     }
 }
+
+
 
 
 int main(int argc, char* argv[]){
@@ -106,7 +62,6 @@ int main(int argc, char* argv[]){
 	}
 
 
-    
 
 	char* extstr;
 	int nch = (int)strtol(argv[1], &extstr, 0);
@@ -114,17 +69,16 @@ int main(int argc, char* argv[]){
     int reallength = 0;
 
 
-	char uniqfifo[LENGTH_UNIQFIFONAME] = UNIQFIFONAME;
-
-
 	int in = 0;
 	int out = 0;
     Transfer* transfer = (Transfer*) calloc(sizeof(Transfer), nch + 1);
 
-	char* startpoint = uniqfifo + sizeof(UNIQFIFONAME) - 1 ;
 
-
-    OPEN_FIFO_NONBLOCK(1, transfer[0].out, O_RDONLY)
+    pipe(transfer[0].out);
+    if (fcntl(transfer[0].out[RD], F_SETFL, O_RDONLY | O_NONBLOCK) == -1){
+            perror("fcntl");
+            exit(1);
+    }
 
 	pid_t child_id = fork();
 
@@ -132,8 +86,7 @@ int main(int argc, char* argv[]){
 	if (child_id == 0){	
 
         CloseParent_sFd(transfer, 0);
-
-		OPEN_FIFO_BLOCK(1, out, O_WRONLY)
+        
 		
 		in = open(argv[2], O_RDONLY);
 
@@ -142,42 +95,49 @@ int main(int argc, char* argv[]){
 
 		lseek(in, 0, SEEK_SET);
 
-		while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {}; 
+		while(reallength = splice(in, NULL, transfer[0].out[WR], NULL, PIPE_BUF, 0)) {}; 
       
-        Closefd(out, "");
+        Closefd(transfer[0].out[WR], "");
         Closefd(in, "");
 
 		exit(0);                    
-	}                               
+	}           
 
+    Closefd(transfer[0].out[WR], "");                 
+    transfer[0].in[WR] = -666;
 
 	
 	for (int i = 1; i < nch; ++i){
 
-        OPEN_FIFO_NONBLOCK(2*i,     transfer[i].in,  O_RDWR)
-        OPEN_FIFO_NONBLOCK(2*i+1,   transfer[i].out, O_RDONLY)
+        pipe(transfer[i].in);
+        pipe(transfer[i].out);
+        if( fcntl(transfer[i].in[WR], F_SETFL, O_WRONLY | O_NONBLOCK) == -1 ||
+           fcntl(transfer[i].out[RD], F_SETFL, O_RDONLY | O_NONBLOCK) == -1){
+            perror("fcntl");
+            exit(1);
+        }
+        
 
 		child_id = fork();
 
 		if (child_id == 0){         
             
             CloseParent_sFd(transfer, i);
-			
-			OPEN_FIFO_BLOCK(2*i, in, O_RDONLY)
-			OPEN_FIFO_BLOCK(2*i+1, out, O_WRONLY)
 
-            while(reallength = splice(in, NULL, out, NULL, PIPE_BUF, 0)) {};  
+            while(reallength = splice(transfer[i].in[RD], NULL, transfer[i].out[WR], NULL, PIPE_BUF, 0)) {};  
           
-            Closefd(out, "");
-            Closefd(in, "");    
+            Closefd(transfer[i].out[WR], "");
+            Closefd(transfer[i].in[RD], "");    
             exit(0);     
 		}
 
+        Closefd(transfer[i].out[WR], "");
+        Closefd(transfer[i].in[RD], "");
 
     }
     
-    snprintf(startpoint, LENGTH_UNIQFIFONAME, "%d", 2*nch);                                                  \
-    transfer[nch].in = STDOUT_FILENO;
+                                                 
+    transfer[nch].in[WR] = STDOUT_FILENO;
 
     for (int i = 0; i < nch; ++i){
         transfer[i].buf_size = (int) pow (3, nch-i)*1024;
@@ -200,118 +160,142 @@ int main(int argc, char* argv[]){
 
         for (int i = endrd; i < nch; ++i)
         {
-          
-            FD_SET(transfer[i].out, &rd_set);
+            if(!transfer[i].isfull){
+                FD_SET(transfer[i].out[RD], &rd_set);
 
-            if(transfer[i].out >= nfds)
-                nfds = transfer[i].out + 1;
+                if(transfer[i].out[RD] >= nfds)
+                    nfds = transfer[i].out[RD] + 1;
+            }
+            
         }
 
+        if(nfds){
+            int readytoread = select(nfds, &rd_set, NULL, NULL, NULL);
+
+          
+
+            for (int i = endrd; readytoread > 0; ++i)
+            {
+               
+                if(FD_ISSET(transfer[i].out[RD], &rd_set)){
+                    readytoread--;
+                    reallength = 1;
+                   
+                    int distance = transfer[i].last_pos - transfer[i].cur_pos;
+                    if(distance > 0)
+                    {
+                        reallength = read(transfer[i].out[RD],
+                                          transfer[i].buf + transfer[i].last_pos, 
+                                          transfer[i].buf_size - transfer[i].last_pos);
+
+                        transfer[i].last_pos += reallength;
+                        if(! (transfer[i].last_pos %= transfer[i].buf_size))
+                            transfer[i].isfull = transfer[i].cur_pos ? 0 : 1;
+                    }
+                    else if(distance < 0){
+                        reallength = read(transfer[i].out[RD],
+                                          transfer[i].buf + transfer[i].last_pos, 
+                                          transfer[i].cur_pos - transfer[i].last_pos);
+                        transfer[i].last_pos += reallength;
+                        transfer[i].isfull = transfer[i].cur_pos == transfer[i].last_pos ? 1 : 0;
+                    }
+                    else
+                    {
+                        reallength = read(transfer[i].out[RD],
+                                          transfer[i].buf, 
+                                          transfer[i].buf_size);
+                        transfer[i].last_pos = reallength;
+                        transfer[i].cur_pos = 0;
+
+                        if( reallength && (! (transfer[i].last_pos %= transfer[i].buf_size )) )
+                            transfer[i].isfull = 1;
+                    }
+
+                    if(!reallength){
+                            if (i != endrd || transfer[i].in[WR] != -666)
+                                exit(21);
+
+                            Closefd(transfer[i].out[RD], "");
+                            transfer[i].out[RD] = -666;
+                            endrd++;
+                        }
+                }
+
+            }
+        }
+
+        nfds = 0;
         for (int i = endwr; i <= nch; ++i)
         {
+            if ((transfer[i-1].last_pos - transfer[i-1].cur_pos) || transfer[i-1].isfull){
+                FD_SET(transfer[i].in[WR], &wr_set);
 
-            FD_SET(transfer[i].in, &wr_set);
+                if(transfer[i].in[WR] >= nfds)
+                    nfds = transfer[i].in[WR] + 1;
+            }
 
-            if(transfer[i].in >= nfds)
-                nfds = transfer[i].in + 1;
-        }
-
-
-        int readytoread = select(nfds, &rd_set, NULL, NULL, NULL);
-
-      
-
-        for (int i = endrd; readytoread > 0; ++i)
-        {
-           
-            if(FD_ISSET(transfer[i].out, &rd_set)){
-                readytoread--;
-                reallength = 1;
-               
-                int distance = transfer[i].last_pos - transfer[i].cur_pos;
-                if(distance > 0)
+            else if (transfer[i-1].out[RD] == -666)
                 {
-                    reallength = read(transfer[i].out,
-                                      transfer[i].buf + transfer[i].last_pos, 
-                                      transfer[i].buf_size - transfer[i].last_pos);
+                    int cnt = 0;
 
-                    transfer[i].last_pos += reallength;
-                    if(! (transfer[i].last_pos %= transfer[i].buf_size))
-                        transfer[i].isfull = transfer[i].cur_pos ? 0 : 1;
-                }
-                else if(distance < 0){
-                    reallength = read(transfer[i].out,
-                                      transfer[i].buf + transfer[i].last_pos, 
-                                      transfer[i].cur_pos - transfer[i].last_pos);
-                    transfer[i].last_pos += reallength;
-                    transfer[i].isfull = transfer[i].cur_pos == transfer[i].last_pos ? 1 : 0;
-                }
-                else if(!transfer[i].isfull)
-                {
-                    reallength = read(transfer[i].out,
-                                      transfer[i].buf, 
-                                      transfer[i].buf_size);
-                    transfer[i].last_pos = reallength;
-                    transfer[i].cur_pos = 0;
-
-                    if( reallength && (! (transfer[i].last_pos %= transfer[i].buf_size )) )
-                        transfer[i].isfull = 1;
-                }
-
-                if(!reallength){
-                        if (i != endrd)
-                            exit(0);
-
-                        Closefd(transfer[i].out, "");
-                        transfer[i].out = -666;
-                        endrd++;
+                    if(i == nch){
+                        endwr++;
+                        break;
                     }
-            }
 
+                    if(ioctl(transfer[i].in[WR], FIONREAD, &cnt) == -1){
+                        perror("ioctl");
+                        exit(1);
+                    }
+
+                    if(!cnt){
+                        Closefd(transfer[i].in[WR], "");
+                        transfer[i].in[WR] = -666;
+                        endwr++;
+                    }   
+                }
         }
 
-        int readytowrite = select(nfds, NULL, &wr_set, NULL, NULL);
+        if(nfds){
+
+            int readytowrite = select(nfds, NULL, &wr_set, NULL, NULL);
 
 
-        for (int i = endwr - 1; readytowrite > 0; ++i)
-        {
-           
-            if(FD_ISSET(transfer[i+1].in, &wr_set)){
-                readytowrite--;
+            for (int i = endwr - 1; readytowrite > 0; ++i)
+            {
+               
+                if(FD_ISSET(transfer[i+1].in[WR], &wr_set)){
+                    readytowrite--;
 
 
-                int distance = transfer[i].last_pos - transfer[i].cur_pos;
-                if(distance > 0)
-                {
-                    transfer[i].cur_pos += write(transfer[i+1].in,
-                                                 transfer[i].buf + transfer[i].cur_pos, 
-                                                 transfer[i].last_pos - transfer[i].cur_pos);
-                    transfer[i].isfull = 0;
+                    int distance = transfer[i].last_pos - transfer[i].cur_pos;
+                    if(distance > 0)
+                    {
+                        transfer[i].cur_pos += write(transfer[i+1].in[WR],
+                                                     transfer[i].buf + transfer[i].cur_pos, 
+                                                     transfer[i].last_pos - transfer[i].cur_pos);
+                        transfer[i].isfull = 0;
+                    }
+                    else if(distance < 0){
+                        transfer[i].cur_pos += write(transfer[i+1].in[WR],
+                                                     transfer[i].buf + transfer[i].cur_pos, 
+                                                     transfer[i].buf_size - transfer[i].cur_pos);
+                        transfer[i].cur_pos %= transfer[i].buf_size;
+                        transfer[i].isfull = 0;
+                    }
+                    else if(transfer[i].isfull)
+                    {
+                        transfer[i].cur_pos += write(transfer[i+1].in[WR],
+                                                     transfer[i].buf + transfer[i].cur_pos, 
+                                                     transfer[i].buf_size - transfer[i].cur_pos);
+                        transfer[i].cur_pos %= transfer[i].buf_size;
+                        transfer[i].isfull = 0;
+                    }
+
+                    
                 }
-                else if(distance < 0){
-                    transfer[i].cur_pos += write(transfer[i+1].in,
-                                                 transfer[i].buf + transfer[i].cur_pos, 
-                                                 transfer[i].buf_size - transfer[i].cur_pos);
-                    transfer[i].cur_pos %= transfer[i].buf_size;
-                    transfer[i].isfull = 0;
-                }
-                else if(transfer[i].isfull)
-                {
-                    transfer[i].cur_pos += write(transfer[i+1].in,
-                                                 transfer[i].buf + transfer[i].cur_pos, 
-                                                 transfer[i].buf_size - transfer[i].cur_pos);
-                    transfer[i].cur_pos %= transfer[i].buf_size;
-                    transfer[i].isfull = 0;
-                }
-                else if (transfer[i].out == -666)
-                {
-                    Closefd(transfer[i+1].in, "");
-                    transfer[i+1].in = -666;
-                    endwr++;
-                }
-                
+
             }
-
         }
 
     }

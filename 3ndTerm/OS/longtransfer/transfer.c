@@ -169,62 +169,6 @@ int main(int argc, char* argv[]){
             
         }
 
-        if(nfds){
-            int readytoread = select(nfds, &rd_set, NULL, NULL, NULL);
-
-          
-
-            for (int i = endrd; readytoread > 0; ++i)
-            {
-               
-                if(FD_ISSET(transfer[i].out[RD], &rd_set)){
-                    readytoread--;
-                    reallength = 1;
-                   
-                    int distance = transfer[i].last_pos - transfer[i].cur_pos;
-                    if(distance > 0)
-                    {
-                        reallength = read(transfer[i].out[RD],
-                                          transfer[i].buf + transfer[i].last_pos, 
-                                          transfer[i].buf_size - transfer[i].last_pos);
-
-                        transfer[i].last_pos += reallength;
-                        if(! (transfer[i].last_pos %= transfer[i].buf_size))
-                            transfer[i].isfull = transfer[i].cur_pos ? 0 : 1;
-                    }
-                    else if(distance < 0){
-                        reallength = read(transfer[i].out[RD],
-                                          transfer[i].buf + transfer[i].last_pos, 
-                                          transfer[i].cur_pos - transfer[i].last_pos);
-                        transfer[i].last_pos += reallength;
-                        transfer[i].isfull = transfer[i].cur_pos == transfer[i].last_pos ? 1 : 0;
-                    }
-                    else
-                    {
-                        reallength = read(transfer[i].out[RD],
-                                          transfer[i].buf, 
-                                          transfer[i].buf_size);
-                        transfer[i].last_pos = reallength;
-                        transfer[i].cur_pos = 0;
-
-                        if( reallength && (! (transfer[i].last_pos %= transfer[i].buf_size )) )
-                            transfer[i].isfull = 1;
-                    }
-
-                    if(!reallength){
-                            if (i != endrd || transfer[i].in[WR] != -666)
-                                exit(21);
-
-                            Closefd(transfer[i].out[RD], "");
-                            transfer[i].out[RD] = -666;
-                            endrd++;
-                        }
-                }
-
-            }
-        }
-
-        nfds = 0;
         for (int i = endwr; i <= nch; ++i)
         {
             if ((transfer[i-1].last_pos - transfer[i-1].cur_pos) || transfer[i-1].isfull){
@@ -236,69 +180,101 @@ int main(int argc, char* argv[]){
 
             else if (transfer[i-1].out[RD] == -666)
                 {
-                    int cnt = 0;
 
                     if(i == nch){
                         endwr++;
-                        break;
+                        return 0;
                     }
-
-                    if(ioctl(transfer[i].in[WR], FIONREAD, &cnt) == -1){
-                        perror("ioctl");
-                        exit(1);
-                    }
-
-                    if(!cnt){
                         Closefd(transfer[i].in[WR], "");
                         transfer[i].in[WR] = -666;
                         endwr++;
-                    }   
                 }
         }
 
-        if(nfds){
 
-            int readytowrite = select(nfds, NULL, &wr_set, NULL, NULL);
+        int readytoread = select(nfds, &rd_set, &wr_set, NULL, NULL);
+      
 
-
-            for (int i = endwr - 1; readytowrite > 0; ++i)
-            {
+        for (int i = 0; readytoread > 0; ++i)
+        {
+           
+            if(FD_ISSET(transfer[i].out[RD], &rd_set)){
+                readytoread--;
+                reallength = 1;
                
-                if(FD_ISSET(transfer[i+1].in[WR], &wr_set)){
-                    readytowrite--;
+                int distance = transfer[i].last_pos - transfer[i].cur_pos;
+                if(distance > 0)
+                {
+                    reallength = read(transfer[i].out[RD],
+                                      transfer[i].buf + transfer[i].last_pos, 
+                                      transfer[i].buf_size - transfer[i].last_pos);
 
+                    transfer[i].last_pos += reallength;
+                    if(! (transfer[i].last_pos %= transfer[i].buf_size))
+                        transfer[i].isfull = transfer[i].cur_pos ? 0 : 1;
+                }
+                else if(distance < 0){
+                    reallength = read(transfer[i].out[RD],
+                                      transfer[i].buf + transfer[i].last_pos, 
+                                      transfer[i].cur_pos - transfer[i].last_pos);
+                    transfer[i].last_pos += reallength;
+                    transfer[i].isfull = transfer[i].cur_pos == transfer[i].last_pos ? 1 : 0;
+                }
+                else
+                {
+                    reallength = read(transfer[i].out[RD],
+                                      transfer[i].buf, 
+                                      transfer[i].buf_size);
+                    transfer[i].last_pos = reallength;
+                    transfer[i].cur_pos = 0;
 
-                    int distance = transfer[i].last_pos - transfer[i].cur_pos;
-                    if(distance > 0)
-                    {
-                        transfer[i].cur_pos += write(transfer[i+1].in[WR],
-                                                     transfer[i].buf + transfer[i].cur_pos, 
-                                                     transfer[i].last_pos - transfer[i].cur_pos);
-                        transfer[i].isfull = 0;
-                    }
-                    else if(distance < 0){
-                        transfer[i].cur_pos += write(transfer[i+1].in[WR],
-                                                     transfer[i].buf + transfer[i].cur_pos, 
-                                                     transfer[i].buf_size - transfer[i].cur_pos);
-                        transfer[i].cur_pos %= transfer[i].buf_size;
-                        transfer[i].isfull = 0;
-                    }
-                    else if(transfer[i].isfull)
-                    {
-                        transfer[i].cur_pos += write(transfer[i+1].in[WR],
-                                                     transfer[i].buf + transfer[i].cur_pos, 
-                                                     transfer[i].buf_size - transfer[i].cur_pos);
-                        transfer[i].cur_pos %= transfer[i].buf_size;
-                        transfer[i].isfull = 0;
-                    }
-
-                    
+                    if( reallength && (! (transfer[i].last_pos %= transfer[i].buf_size )) )
+                        transfer[i].isfull = 1;
                 }
 
+                if(!reallength){
+                        if (i != endrd || transfer[i].in[WR] != -666)
+                            exit(21);
+
+                        Closefd(transfer[i].out[RD], "");
+                        transfer[i].out[RD] = -666;
+                        endrd++;
+                    }
+            }
+
+            if(FD_ISSET(transfer[i+1].in[WR], &wr_set)){
+                readytoread--;
+
+
+                int distance = transfer[i].last_pos - transfer[i].cur_pos;
+                if(distance > 0)
+                {
+                    transfer[i].cur_pos += write(transfer[i+1].in[WR],
+                                                 transfer[i].buf + transfer[i].cur_pos, 
+                                                 transfer[i].last_pos - transfer[i].cur_pos);
+                    transfer[i].isfull = 0;
+                }
+                else if(distance < 0){
+                    transfer[i].cur_pos += write(transfer[i+1].in[WR],
+                                                 transfer[i].buf + transfer[i].cur_pos, 
+                                                 transfer[i].buf_size - transfer[i].cur_pos);
+                    transfer[i].cur_pos %= transfer[i].buf_size;
+                    transfer[i].isfull = 0;
+                }
+                else if(transfer[i].isfull)
+                {
+                    transfer[i].cur_pos += write(transfer[i+1].in[WR],
+                                                 transfer[i].buf + transfer[i].cur_pos, 
+                                                 transfer[i].buf_size - transfer[i].cur_pos);
+                    transfer[i].cur_pos %= transfer[i].buf_size;
+                    transfer[i].isfull = 0;
+                }
             }
         }
-
     }
+     
+
+    
 
     return 0;
 }

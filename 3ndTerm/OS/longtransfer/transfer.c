@@ -195,7 +195,7 @@ int main(int argc, char* argv[]){
         int readytoread = select(nfds, &rd_set, &wr_set, NULL, NULL);
       
 
-        for (int i = 0; readytoread > 0; ++i)
+        for (int i = endwr - 1; readytoread > 0; ++i)
         {
            
             if(FD_ISSET(transfer[i].out[RD], &rd_set)){

@@ -56,12 +56,12 @@ int main(int argc, char* argv[]){
 	if (child_id == 0){
 		
 		prctl(PR_SET_PDEATHSIG, SIGCHLD);
-		
-		act.sa_handler = translator;
-		sigaction(SIGUSR1, &act, NULL);
 
 		if ((parent_id = getppid()) == 1)
 			exit(1);
+		
+		act.sa_handler = translator;
+		sigaction(SIGUSR1, &act, NULL);
 		
 		FILE* flin = fopen(argv[1], "rb");
 		
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]){
 		
 		kill(parent_id, SIGUSR2);
 
-
+		return 0;
 	}
 
 	else{
@@ -109,12 +109,12 @@ int main(int argc, char* argv[]){
 		
 
 		while(1){
-			char c = 0;
-
 			sigsuspend(&blockingMask);
+			
 			if(bit == 0){
 				exit(0);
 			}
+			char c = 0;
 			kill(child_id, SIGUSR1); 
 
 			for (int i = 0; i < BITSIZEofCHAR; ++i)
@@ -125,11 +125,12 @@ int main(int argc, char* argv[]){
 				
 				kill(child_id, SIGUSR1);
 			}
-
 			
 			write(STDOUT_FILENO, &c , 1);
 				
 		}
 
 	}
+	
+	return 0;
 }

@@ -106,18 +106,11 @@ AVL_Tree* ConAVL_Tree(Elem_t Elem){
 
 
 
-int Insert(AVL_Tree* tree, Elem_t Elem){
+Node* Find_Elem( Elem_t Elem, void* dir,  Node** recent_nz, Node** p_recent_nz){
 
-    if(!tree)
-        return -2;
+	Node* iterator, p_iterator;
 
-    Node* recent_nz = tree -> root, p_recent_nz = NULL;
-    Node* iterator, p_iterator;
-    char dir[MAX_AVL_height];
-    int length;
-    char side;
-
-    for(iterator = recent_nz, p_iterator = p_recent_nz; 
+    for(iterator = recent_nz, p_iterator = *p_recent_nz; 
         iterator != NULL;
         p_iterator = iterator, iterator = iterator -> link[side]) 
     {
@@ -133,17 +126,41 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
 
     }
 
-    if (!p_iterator -> link[side] = Create_Node(Elem))
-        return IMPOSSIBLE_TO_INSERT;
-    tree -> size++;
+    return p_iterator;
 
-    for (iterator = recent_nz, length = 0; p != p_iterator -> link[side]; 
-         iterator = iterator -> link[dir[length++]])
+}
+
+
+int Apdate_balance(Node* iterator, Node* final, void* dir){
+
+	 for (int length = 0; p != final; iterator = iterator -> link[dir[length++]])
     
         if (dir[length])
             iterator -> balance++;
         else
             iterator -> balance--;
+}
+
+
+int Insert(AVL_Tree* tree, Elem_t Elem){
+
+    if(!tree)
+        return -2;
+
+    Node* recent_nz = tree -> root, p_recent_nz = NULL;
+    Node* final;
+    char dir[MAX_AVL_height];
+    int length;
+    char side;
+
+
+    final = Find_Elem()
+
+    if (!final -> link[side] = Create_Node(Elem))
+        return IMPOSSIBLE_TO_INSERT;
+    tree -> size++;
+
+   Apdate_balance(recent_nz, p_iterator -> link[side], dir)
 
 
     Node* new_root = NULL;

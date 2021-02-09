@@ -3,6 +3,8 @@
 enum errors{
     NORMAL_STATE = 0,
     IMPOSSIBLE_TO_INSERT,
+    INVALID_TREE,
+    TREE_IS_FULL
 
 };
 
@@ -91,6 +93,10 @@ Node* Create_Node(Elem_t Elem){
     return node;
 }
 
+void Destruct_Node(Node* node){
+    free(node);
+}
+
 
 AVL_Tree* ConAVL_Tree(Elem_t Elem){
     AVL_Tree* tree = (AVL_Tree*) avl_calloc(sizeof(AVL_Tree), 1);
@@ -105,24 +111,47 @@ AVL_Tree* ConAVL_Tree(Elem_t Elem){
 }
 
 
+Node* Find_Elem(AVL_Tree tree, Elem_t elem,  char* dir, Node** path, int* length){
 
-Node* Find_Elem( Elem_t Elem, void* dir,  Node** recent_nz, Node** p_recent_nz){
+    if(!tree)
+        return NULL;
+
+    int side = 0;
+
+    for (Node* iterator = tree -> root; iterator != NULL; iterator = iterator -> link[side]){
+         int cmp = Compare_function(iterator -> value, Elem_t);
+         if (cmp == 0){
+            return iterator;
+        }
+        dir[*length] = side = cmp > 0;
+        path[*length] = iterator;
+        (*length)++;
+    }
+
+    return NULL;
+}
+
+
+
+Node* Find_wheretoInsert( Elem_t Elem, char* dir,  Node** recent_nz, Node** p_recent_nz, char* side){
 
 	Node* iterator, p_iterator;
+    int length = 0;
 
-    for(iterator = recent_nz, p_iterator = *p_recent_nz; 
+    for(iterator = *recent_nz, p_iterator = *p_recent_nz; 
         iterator != NULL;
-        p_iterator = iterator, iterator = iterator -> link[side]) 
+        p_iterator = iterator, iterator = iterator -> link[*side]) 
     {
         int cmp = Compare_function(iterator -> value, Elem_t);
-        if (cmp == 0)
-            return -1;
+        if (cmp == 0){
+            return NULL;
+        }
         if (iterator -> balance != 0){
-            p_recent_nz = p_iterator;
-            recent_nz = iterator;
+            *p_recent_nz = p_iterator;
+            *recent_nz = iterator;
             length = 0;
         }
-        dir[length++] = side = cmp > 0;
+        dir[length++] = *side = cmp > 0;
 
     }
 
@@ -133,7 +162,7 @@ Node* Find_Elem( Elem_t Elem, void* dir,  Node** recent_nz, Node** p_recent_nz){
 
 int Apdate_balance(Node* iterator, Node* final, void* dir){
 
-	 for (int length = 0; p != final; iterator = iterator -> link[dir[length++]])
+	 for (int length = 0; iterator != final; iterator = iterator -> link[dir[length++]])
     
         if (dir[length])
             iterator -> balance++;
@@ -145,22 +174,24 @@ int Apdate_balance(Node* iterator, Node* final, void* dir){
 int Insert(AVL_Tree* tree, Elem_t Elem){
 
     if(!tree)
-        return -2;
+        return INVALID_TREE;
+    if(tree -> size == MAX_AVL_SIZE){
+        return TREE_IS_FULL;
+    }
+
 
     Node* recent_nz = tree -> root, p_recent_nz = NULL;
-    Node* final;
-    char dir[MAX_AVL_height];
-    int length;
+    char dir[MAX_AVL_height+1];
     char side;
 
 
-    final = Find_Elem()
+    Node* final = Find_wheretoInsert(Elem, dir, &recent_nz, &p_recent_nz, &side);
 
-    if (!final -> link[side] = Create_Node(Elem))
+    if (if !final || !final -> link[side] = Create_Node(Elem))
         return IMPOSSIBLE_TO_INSERT;
     tree -> size++;
 
-   Apdate_balance(recent_nz, p_iterator -> link[side], dir)
+    Apdate_balance(recent_nz, final, dir)
 
 
     Node* new_root = NULL;
@@ -237,6 +268,64 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
 
 int Delete(AVL_Tree* tree, Elem_t Elem){
 
+    if (!tree)
+        return INVALID_TREE;
+    Node* path[MAX_AVL_height] = {};
+    char dir[MAX_AVL_height];
+    int pos = 0;
+
+    Node* final = Find_Elem(tree, Elem, dir, path, &pos);
+    if (! tree -> size - 1){
+        DeAVL_Tree(tree);
+        return NO_TREE;
+    }
+
+    if (final -> link[1] == NULL){
+        path[pos - 1] -> link [dir[pos - 1]] = final -> link[0];
+    }
+    else {
+        Node* right = final -> link[1];
+        if (right -> link[0] == NULL){
+            right -> link[0] = final -> link[0];
+            right -> balance = final -> balance;
+            path[pos − 1] -> link[dir[pos − 1]] = right ;
+            dir[pos] = 1;
+            path[pos++] = right ;
+
+        }
+        else {
+            struct Node* successor;
+            int j = pos++;
+            for (;;) {
+                dir[pos] = 0;
+                path[pos++] = right ;
+                successor = right -> link[0];
+                if (successor -> link[0] == NULL)
+                break;
+                right = successor;
+            }
+            successor -> link[0] = final -> link[0];
+            right -> link[0] = successor -> link[1];
+            successor -> link[1] = final -> link[1];
+            successor -> balance = final -> balance;
+            path[j − 1] -> link[dir[j − 1]] = successor;
+            dir[j] = 1;
+            path[j] = successor;
+
+                    }
+    }
+
+    Destruct_Node(final);
+
+    assert (k > 0);
+while (−−k > 0) {
+struct avl node ∗y = pa[k];
+if (da[k] == 0)
+{ h Update y’s balance factor after left-side AVL deletion 174 i }
+else { h Update y’s balance factor after right-side AVL deletion 179 i }
+}
+
+
 }
 
 
@@ -276,7 +365,7 @@ void AVL_Tree_Dump(AVL_Tree* tree) {
 
 void Print_tree(FILE* flin, AVL_Tree* tree){
         int current = 0;
-        fprintf(flin, "\"%d\" [shape=record,label=\"  {%d | value\\n%p\\n " Elem_t_print " | {<prev> previous\\n%p\\n %d | <next> next\\n%p\\n %d} }\" ];\n",
+        fprintf(flin, "\"%d\" [shape=record,label=\"  {%d | value\\n%final\\n " Elem_t_print " | {<prev> previous\\n%final\\n %d | <next> next\\n%final\\n %d} }\" ];\n",
         current, current, &(tree -> Nodes[current].value),
         *(char**)tree -> Nodes[current].value, &(tree -> Nodes[current].previous), tree -> Nodes[current].previous,
         &(tree -> Nodes[current].next), tree -> Nodes[current].next);
@@ -287,9 +376,9 @@ void Print_tree(FILE* flin, AVL_Tree* tree){
         current = tree -> head;
         //int previous = tree -> Nodes[current].previous;
         for(int i = 0; i < tree -> size; i++){
-            fprintf(flin, "\"%d\" [shape=record,label=\"  {%d | value\\n%p\\n ",  current, current, &(tree -> Nodes[current].value));
+            fprintf(flin, "\"%d\" [shape=record,label=\"  {%d | value\\n%final\\n ",  current, current, &(tree -> Nodes[current].value));
             (*Print_Function)(flin,  *(char**)tree -> Nodes[current].value);
-            fprintf(flin, " | {<prev> previous\\n%p\\n %d | <next> next\\n%p\\n %d} }\" ];\n",
+            fprintf(flin, " | {<prev> previous\\n%final\\n %d | <next> next\\n%final\\n %d} }\" ];\n",
                     &(tree -> Nodes[current].previous), tree -> Nodes[current].previous,
                     &(tree -> Nodes[current].next), tree -> Nodes[current].next);
             fprintf(flin, " { rank = %d; \"%d\"}\n", 0, current);

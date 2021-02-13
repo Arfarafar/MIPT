@@ -170,6 +170,50 @@ int Apdate_balance(Node* iterator, Node* final, void* dir){
             iterator -> balance--;
 }
 
+Node* Left_at_x_Right_at_y(Node* X, Node* Y, int dir){
+	
+	Y -> link[dir] = Left_rotate(X);
+    Node* new_root = Right_rotate(Y);
+    if (new_root -> balance == −1) {
+        X -> balance = 0;
+        Y -> balance = 1;
+    }
+    else if (new_root -> balance == 0) {
+        X -> balance = 0;
+        Y -> balance = 0;
+    }
+    else {
+        X -> balance = −1;
+        Y -> balance = 0;
+    }
+    new_root -> balance = 0;
+
+    return new_root;
+}
+
+Node* Right_at_x_Left_at_y (Node* X, Node* Y, int dir){
+
+	Y -> link[dir] = Right_rotate(X);
+    Node* new_root = Left_rotate(Y);
+        if (new_root -> balance == −1) {
+            X -> balance = 1;
+            Y -> balance = 0;
+        }
+        else if (new_root -> balance == 0) {
+            X -> balance = 0;
+            Y -> balance = 0;
+        }
+        else {
+            X -> balance = 0;
+            Y -> balance = -1;
+        }
+        new_root -> balance = 0;
+
+        return new_root;
+}
+
+
+
 
 int Insert(AVL_Tree* tree, Elem_t Elem){
 
@@ -201,25 +245,12 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
         {
             new_root = Right_rotate(recent_nz);
             recent_nz -> balance = 0;
+            new_root -> balance = 0;
         }
 
         else
         {
-            recent_nz -> link[0] = Left_rotate(recent_nz -> link[0]);
-            new_root = Right_rotate(recent_nz);
-            if (new_root -> balance == −1) {
-                recent_nz -> link[0] -> balance = 0;
-                recent_nz -> balance = 1;
-            }
-            else if (new_root -> balance == 0) {
-                recent_nz -> link[0] -> balance = 0;
-                recent_nz -> balance = 0;
-            }
-            else {
-                recent_nz -> link[0] -> balance = −1;
-                recent_nz -> balance = 0;
-            }
-           
+            new_root = Left_at_x_Right_at_y(recent_nz -> link[0], recent_nz, 0); // x, y, dir
        }
 
 
@@ -229,24 +260,12 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
         {
             new_root = Left_rotate(recent_nz);
             recent_nz -> balance = 0;
+            new_root -> balance = 0;
         }
 
         else
         {
-            recent_nz -> link[1] = Right_rotate(recent_nz -> link[1]);
-            new_root = Left_rotate(recent_nz);
-            if (new_root -> balance == −1) {
-                recent_nz -> link[1] -> balance = 1;
-                recent_nz -> balance = 0;
-            }
-            else if (new_root -> balance == 0) {
-                recent_nz -> link[1] -> balance = 0;
-                recent_nz -> balance = 0;
-            }
-            else {
-                recent_nz -> link[1] -> balance = 0;
-                recent_nz -> balance = -1;
-            }
+            new_root = Right_at_x_Left_at_y(recent_nz -> link[1], recent_nz, 1);
            
        }
 
@@ -254,7 +273,7 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
     }
     else return 0;
 
-    new_root -> balance = 0;
+    
         
 
     if(p_recent_nz)
@@ -304,6 +323,7 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
                 break;
                 right = successor;
             }
+            
             successor -> link[0] = final -> link[0];
             right -> link[0] = successor -> link[1];
             successor -> link[1] = final -> link[1];
@@ -312,18 +332,48 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
             dir[j] = 1;
             path[j] = successor;
 
-                    }
+        }
     }
 
     Destruct_Node(final);
 
     assert (k > 0);
-while (−−k > 0) {
-struct avl node ∗y = pa[k];
-if (da[k] == 0)
-{ h Update y’s balance factor after left-side AVL deletion 174 i }
-else { h Update y’s balance factor after right-side AVL deletion 179 i }
-}
+	while (−−pos > 0) {
+		Node* cur_node = path[pos];
+		if (dir[pos] == 0){ 
+				cur_node -> balance++;
+
+			if (y→avl balance == 1)
+				break;
+			else if (y→avl balance == 2){
+
+				if (x →avl balance == −1){ 
+					
+					Node* new_node = Right_at_x_Left_at_y (cur_node -> link [1], cur_node, 1);
+					path[pos − 1] -> link [dir[pos − 1]] = new_node ;
+
+				}
+				else { 
+						y→avl link [1] = x →avl link [0];
+						x →avl link [0] = y;
+						pa[k − 1]→avl link [da[k − 1]] = x ;
+						if (x →avl balance == 0) {
+						x →avl balance = − 1;
+						y→avl balance = 1;
+						break;
+					}
+
+					else x →avl balance = y→avl balance = 0;
+				}
+
+					tree -> size−−;
+					tree→avl generation++;
+					return (void ∗) item;
+			}
+
+		}
+		else { h Update y’s balance factor after right-side AVL deletion 179 i }
+	}
 
 
 }

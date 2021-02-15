@@ -1,19 +1,25 @@
 
+#include <limits.h>
+#include <stdlib.h>
 
 enum errors{
     NORMAL_STATE = 0,
     IMPOSSIBLE_TO_INSERT,
     INVALID_TREE,
-    TREE_IS_FULL
-
+    TREE_IS_FULL,
+    NO_SUCH_ELEMENT,
+    NO_TREE
 };
 
 typedef int Elem_t;
 #define Elem_t_print "%d"
 
-typedef struct {
+const int MAX_AVL_height = 16;
+const int MAX_AVL_SIZE = 65536;
+
+typedef struct Node{
     Elem_t value;
-    Node* link[2];
+    struct Node* link[2];
     char balance;
 } Node;
 
@@ -35,7 +41,7 @@ Node* Left_rotate(Node*);
 Node* Right_rotate(Node*);
 
 
-void Diigraph (AVL_Tree* tree);
+void Diigraph (AVL_Tree* tree, const char* name);
 
 
 AVL_Tree* ConAVL_Tree(Elem_t Elem);
@@ -48,7 +54,7 @@ int (*Compare_function)(Elem_t Elem1, Elem_t Elem2) = Compare_int;
 
 
 
---------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------
 
 
 int Compare_int(int left, int right){
@@ -79,7 +85,7 @@ Node* Right_rotate(Node* root){
 
 void* avl_calloc(size_t num, size_t size){
 
-    if (num * size > MAX_INT / 4)
+    if (num * size > INT_MAX / 4)
         return NULL;
     return calloc(num, size);
 
@@ -99,7 +105,7 @@ AVL_Tree* ConAVL_Tree(Elem_t Elem){
     AVL_Tree* tree = (AVL_Tree*) avl_calloc(sizeof(AVL_Tree), 1);
     if(tree)
     {
-        if(!tree -> root = Create_Node(Elem))
+        if(!(tree -> root = Create_Node(Elem)))
             return NULL;
         tree -> size = 1;
     }
@@ -123,7 +129,7 @@ void DeAVL_Tree(AVL_Tree* tree){
 
     Destruct_Node(tree -> root);
 
-    free(tree -> root);
+    free(tree);
 }
 
 
@@ -132,9 +138,9 @@ void Foreach(Node* root, int(*callback)(Node* cur_node, Elem_t elem, void *data)
     callback(root, root -> value, data);
 
     if(root -> link[0])
-        Foreach(root -> link[0]);
+        Foreach(root -> link[0], callback, data);
     if(root -> link[1])
-        Foreach(root -> link[1]);
+        Foreach(root -> link[1], callback, data);
 }
 
 
@@ -146,7 +152,7 @@ Node* Find_Elem(AVL_Tree* tree, Elem_t elem,  char* dir, Node** path, int* lengt
     int side = 0;
 
     for (Node* iterator = tree -> root; iterator != NULL; iterator = iterator -> link[side]){
-         int cmp = Compare_function(iterator -> value, Elem_t);
+         int cmp = Compare_function(iterator -> value, elem);
          if (cmp == 0){
             return iterator;
         }
@@ -160,16 +166,16 @@ Node* Find_Elem(AVL_Tree* tree, Elem_t elem,  char* dir, Node** path, int* lengt
 
 
 
-Node* Find_wheretoInsert( Elem_t Elem, char* dir,  Node** recent_nz, Node** p_recent_nz, char* side){
+Node* Find_wheretoInsert( Elem_t elem, char* dir,  Node** recent_nz, Node** p_recent_nz, char* side){
 
-	Node* iterator, p_iterator;
+	Node* iterator, *p_iterator;
     int length = 0;
 
     for(iterator = *recent_nz, p_iterator = *p_recent_nz; 
         iterator != NULL;
         p_iterator = iterator, iterator = iterator -> link[*side]) 
     {
-        int cmp = Compare_function(iterator -> value, Elem_t);
+        int cmp = Compare_function(iterator -> value, elem);
         if (cmp == 0){
             return NULL;
         }
@@ -202,7 +208,7 @@ Node* Left_at_x_Right_at_y(Node* X, Node* cur_node, int dir){
 	
 	cur_node -> link[dir] = Left_rotate(X);
     Node* new_root = Right_rotate(cur_node);
-    if (new_root -> balance == −1) {
+    if (new_root -> balance == -1) {
         X -> balance = 0;
         cur_node -> balance = 1;
     }
@@ -211,7 +217,7 @@ Node* Left_at_x_Right_at_y(Node* X, Node* cur_node, int dir){
         cur_node -> balance = 0;
     }
     else {
-        X -> balance = −1;
+        X -> balance = -1;
         cur_node -> balance = 0;
     }
     new_root -> balance = 0;
@@ -223,7 +229,7 @@ Node* Right_at_x_Left_at_y (Node* X, Node* cur_node, int dir){
 
 	cur_node -> link[dir] = Right_rotate(X);
     Node* new_root = Left_rotate(cur_node);
-        if (new_root -> balance == −1) {
+        if (new_root -> balance == -1) {
             X -> balance = 1;
             cur_node -> balance = 0;
         }
@@ -252,18 +258,21 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
     }
 
 
-    Node* recent_nz = tree -> root, p_recent_nz = NULL;
+    Node* recent_nz = tree -> root;
+    Node* p_recent_nz = NULL;
     char dir[MAX_AVL_height+1];
     char side;
 
 
     Node* final = Find_wheretoInsert(Elem, dir, &recent_nz, &p_recent_nz, &side);
 
-    if (if !final || !final -> link[side] = Create_Node(Elem))
+
+    if (!final || !(final -> link[side] = Create_Node(Elem)))
         return IMPOSSIBLE_TO_INSERT;
     tree -> size++;
 
-    Apdate_balance(recent_nz, final, dir)
+      Apdate_balance(recent_nz, final -> link[side], dir);
+  
 
 
     Node* new_root = NULL;
@@ -316,7 +325,7 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
 
     if (!tree)
         return INVALID_TREE;
-    Node* path[MAX_AVL_height] = {};
+    Node* path[MAX_AVL_height];
     char dir[MAX_AVL_height];
     int pos = 1;
 
@@ -325,17 +334,18 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
     if(final == NULL)
         return NO_SUCH_ELEMENT;
 
-    if (!tree -> size - 1){
+    if (!(tree -> size - 1)){
         DeAVL_Tree(tree);
         return NO_TREE;
     }
 
-    if(final == tree -> root){
-        path[0] = final;
-        dir[0] = 0;
-    }
+   
+    path[0] = final;
+    dir[0] = 0;
+    
 
-
+    AVL_Tree treeee;
+    
 
     if (final -> link[1] == NULL){
         path[pos - 1] -> link [dir[pos - 1]] = final -> link[0];
@@ -345,7 +355,7 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
         if (right -> link[0] == NULL){
             right -> link[0] = final -> link[0];
             right -> balance = final -> balance;
-            path[pos − 1] -> link[dir[pos − 1]] = right ;
+            path[pos - 1] -> link[dir[pos - 1]] = right ;
             dir[pos] = 1;
             path[pos++] = right ;
 
@@ -366,17 +376,24 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
             right -> link[0] = successor -> link[1];
             successor -> link[1] = final -> link[1];
             successor -> balance = final -> balance;
-            path[j − 1] -> link[dir[j − 1]] = successor;
+            path[j - 1] -> link[dir[j - 1]] = successor;
             dir[j] = 1;
             path[j] = successor;
 
         }
     }
 
-    final -> link[0] = final -> link[1] = NULL;
-    Destruct_Node(final);
+    if(final == tree -> root){
+        tree -> root = path[1];
+    }    
 
-	while (−−pos > 0) {
+    final -> link[0] = final -> link[1] = NULL;
+
+    Destruct_Node(final);
+    
+
+
+	while (--pos > 0) {
 		Node* cur_node = path[pos];
 		if (dir[pos] == 0){ 
 
@@ -385,23 +402,23 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
 				break;
 			else if (cur_node -> balance == 2){
 
-				if (cur_node -> link [1] -> balance == −1){ 
+				if ((cur_node -> link [1]) -> balance == -1){ 
 					
 					Node* new_node = Right_at_x_Left_at_y (cur_node -> link [1], cur_node, 1);
-					path[pos − 1] -> link [dir[pos − 1]] = new_node;
+					path[pos - 1] -> link [dir[pos - 1]] = new_node;
 				}
 				else { 
 					cur_node -> link [1] = cur_node -> link [1] -> link [0];
 					cur_node -> link [1] -> link [0] = cur_node;
-					path[pos − 1] -> link [dir[pos − 1]] = cur_node -> link [1];
-					if (cur_node -> link [1] -> balance == 0) {
-						cur_node -> link [1] -> balance = −1;
+					path[pos - 1] -> link [dir[pos - 1]] = cur_node -> link [1];
+					if ((cur_node -> link [1])-> balance == 0) {
+						(cur_node -> link [1]) -> balance = -1;
 						cur_node -> balance = 1;
 						break;
 					}
 
 				    else
-                        cur_node -> link [1] -> balance = cur_node -> balance = 0;
+                        (cur_node -> link [1]) -> balance = cur_node -> balance = 0;
 				}
 
 				
@@ -409,36 +426,36 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
 
 		}
 		else {
-            cur_node -> balance−−;
-            if (cur_node -> balance == −1)
+            cur_node -> balance--;
+            if (cur_node -> balance == -1)
                 break;
-            else if (cur_node -> balance == −2) {
+            else if (cur_node -> balance == -2) {
                 
                 if (cur_node -> link[0] -> balance == 1) {
                     
                     Node* new_node = Left_at_x_Right_at_y(cur_node -> link[0], cur_node, 0);
-                    path[pos − 1] -> link [dir[pos − 1]] = new_node;
+                    path[pos - 1] -> link [dir[pos - 1]] = new_node;
                 } 
                 else {
-                    cur_node -> link[0] = cur_node -> link[0] -> link[1];
+                    cur_node -> link[0] = (cur_node -> link[0]) -> link[1];
                    
-                    cur_node -> link[0] -> link[1] = cur_node;
-                    path[pos − 1] -> link [dir[pos − 1]] = cur_node -> link [0];
+                    (cur_node -> link[0]) -> link[1] = cur_node;
+                    path[pos - 1] -> link [dir[pos - 1]] = cur_node -> link [0];
 
-                    if (cur_node -> link[0] -> balance == 0) {
-                        cur_node -> link[0] -> balance = 1;
-                        cur_node -> balance = −1;
+                    if ((cur_node -> link)[0] -> balance == 0) {
+                        (cur_node -> link[0]) -> balance = 1;
+                        cur_node -> balance = -1;
                         break;
                     }
                     else 
-                        cur_node -> link[0] -> balance = cur_node -> balance = 0;
+                        (cur_node -> link[0]) -> balance = cur_node -> balance = 0;
                 }
             }
 
         }
 	}
 
-    tree -> size−−;
+    tree -> size--;
     return 0;
 
 
@@ -456,22 +473,22 @@ void Print_tree(FILE* flout, Node* cur_node, int level){
 
     if(cur_node -> balance > 0){
         fprintf(flout, "\"%p\"[shape=\"rectangle\", style=\"filled\", fillcolor=\"#FA1005\", label = \"", cur_node);
-        fprintf(flout, "+");
+        fprintf(flout, Elem_t_print " +", cur_node -> value);
     }
     else if(cur_node -> balance < 0){
-        fprintf(flout, "\"%p\"[shape=\"rectangle\", style=\"filled\", fillcolor=\"#OFB8F0\", label = \"", cur_node);
-        fprintf(flout, "-");
+        fprintf(flout, "\"%p\"[shape=\"rectangle\", style=\"filled\", fillcolor=\"#0FB8F0\", label = \"", cur_node);
+        fprintf(flout, Elem_t_print " -", cur_node -> value);
     }
     else{
         fprintf(flout, "\"%p\"[shape=\"rectangle\", style=\"filled\", fillcolor=\"#EFEFEF\", label = \"", cur_node);
-        fprintf(flout, "o");
+        fprintf(flout, Elem_t_print " o", cur_node -> value);
     }
     fprintf(flout, "\" ];\n");
 
 
     fprintf(flout, " { rank = %d; \"%p\"}\n", level, cur_node);
-    Print_graphnode(flout, cur_node-> link[0], level + 1);
-    Print_graphnode(flout, cur_node-> link[1], level + 1);
+    Print_tree(flout, cur_node-> link[0], level + 1);
+    Print_tree(flout, cur_node-> link[1], level + 1);
     if (cur_node-> link[0])
         fprintf(flout, "\"%p\" -> \"%p\" [ arrowhead=\"vee\" , label = \" l \"];\n", cur_node, cur_node->  link[0]);
        // fprintf(flout, "\"%p\" -> \"%p\" [ arrowhead=\"vee\" ];\n", cur_node, cur_node->  link[0]);
@@ -485,10 +502,10 @@ void Print_tree(FILE* flout, Node* cur_node, int level){
 
 
 
-void Diigraph(AVL_Tree* tree){
-    FILE* flin = fopen("tree.dot", "wt");
+void Diigraph(AVL_Tree* tree, const char* name){
+    FILE* flin = fopen(name, "wt");
     fprintf(flin, "digraph G{\n"
-                  "rankdir=LR;\n"
+                  "rankdir=TB;\n"
                   "node[color=\"goldenrod\",fontsize=13];\n");
     Print_tree(flin, tree -> root, 1);
     fprintf(flin, " }\n");

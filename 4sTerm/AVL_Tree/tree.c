@@ -312,6 +312,44 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
 
 }
 
+int Rebalance(int sign, Node* cur_node, Node** root)
+{
+            cur_node -> balance += sign;
+
+            int dir = sign == 1;
+            int indir = sign == -1;
+
+            if (cur_node -> balance == sign*1)
+                return 1;
+            else if (cur_node -> balance == sign*2) {
+                Node* left = cur_node -> link[dir];
+                if (left -> balance == -sign) {
+                    
+                    if( sign == -1)
+                        *root = Left_at_x_Right_at_y(left, cur_node, 0);
+                    else
+                        *root = Right_at_x_Left_at_y(left, cur_node, 0);
+
+        
+                } 
+                else {
+                    cur_node -> link[dir] = left -> link[indir];
+                    left -> link[indir] = cur_node;
+                    *root = left;
+
+                    if (left -> balance == 0) {
+                        left -> balance = -sign;
+                        cur_node -> balance = sign;
+                        return 1;
+                    }
+                    else 
+                        left -> balance = cur_node -> balance = 0;
+                }
+               
+            }
+            return 0;
+
+        }
 
 
 
@@ -386,73 +424,29 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
     Destruct_Node(final);
     
 
-	while (--pos > 0) {
+	while (--pos > 1) {
 		Node* cur_node = path[pos];
+        Node** new_root = &(path[pos - 1] -> link [dir[pos - 1]]);
 		if (dir[pos] == 0){ 
-
-			cur_node -> balance ++;
-			if (cur_node -> balance == 1)
-				break;
-			else if (cur_node -> balance == 2){
-                Node* right = cur_node -> link [1] ;
-				if (right -> balance == -1){ 
-					
-					Node* new_node = Right_at_x_Left_at_y (right, cur_node, 1);
-					if(pos != 1)
-                        path[pos - 1] -> link [dir[pos - 1]] = new_node;
-                    else 
-                        tree-> root = new_node;
-                   
-				}
-				else { 
-                   
-					cur_node -> link [1] = right -> link [0];
-					right -> link [0] = cur_node;
-					path[pos - 1] -> link [dir[pos - 1]] = right;
-					if (right -> balance == 0) {
-						right -> balance = -1;
-						cur_node -> balance = 1;
-						break;
-					}
-
-				    else
-                        right -> balance = cur_node -> balance = 0;
-				}
-                 
-				
-			}
-		}
-
-		else { // -
-            cur_node -> balance--;
-
-            if (cur_node -> balance == -1)
+            if(Rebalance(1, cur_node, new_root))
                 break;
-            else if (cur_node -> balance == -2) {
-                Node* left = cur_node -> link[0];
-                if (left -> balance == 1) {
-                    
-                    Node* new_node = Left_at_x_Right_at_y(left, cur_node, 0);
-                    path[pos - 1] -> link [dir[pos - 1]] = new_node;
-                } 
-                else {
-                    cur_node -> link[0] = left -> link[1];
-                    left -> link[1] = cur_node;
-                    path[pos - 1] -> link [dir[pos - 1]] = left;
-
-                    if (left -> balance == 0) {
-                        left -> balance = 1;
-                        cur_node -> balance = -1;
-                        break;
-                    }
-                    else 
-                        left -> balance = cur_node -> balance = 0;
-                }
-               
-            }
-
+		}
+		else{ 
+            if(Rebalance(-1, cur_node, new_root))
+                break;
         }
 	}
+
+
+    if (pos == 1){
+        Node* cur_node = path[pos];
+        Node** new_root = &(tree -> root);
+        if (dir[pos] == 0)
+            Rebalance(1, cur_node, new_root);
+        else  
+            Rebalance(-1, cur_node, new_root);
+    }
+
 
     tree -> size--;
     return 0;
@@ -461,35 +455,4 @@ int Delete(AVL_Tree* tree, Elem_t Elem){
 }
 
 
-void Rebalance(int sign, Node* cur_node, Node** root)
-{
-            cur_node -> balance += sign;
 
-            int dir = sign == 1;
-
-            if (cur_node -> balance == sign*1)
-                break;
-            else if (cur_node -> balance == sign*2) {
-                Node* left = cur_node -> link[dir];
-                if (left -> balance == -sign) {
-                    
-                    Node* new_node = Left_at_x_Right_at_y(left, cur_node, 0);
-                    *root = new_node;
-                } 
-                else {
-                    cur_node -> link[0] = left -> link[1];
-                    left -> link[1] = cur_node;
-                    *root = left;
-
-                    if (left -> balance == 0) {
-                        left -> balance = -sign;
-                        cur_node -> balance = sign;
-                        break;
-                    }
-                    else 
-                        left -> balance = cur_node -> balance = 0;
-                }
-               
-            }
-
-        }

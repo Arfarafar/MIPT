@@ -312,6 +312,7 @@ int Insert(AVL_Tree* tree, Elem_t Elem){
 
 }
 
+
 int Rebalance(int sign, Node* cur_node, Node** root)
 {
             cur_node -> balance += sign;

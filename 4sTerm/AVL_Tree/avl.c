@@ -23,13 +23,12 @@ void TreeTest(){
 	
 	for (int i = 0; i < 50; ++i)
 	{
-
 		Delete(tree, (i*18397) % 57);
 	}
 
-	for (int i = 0; i < 50; ++i)
+	for (int i = 0; i < 5000; ++i)
 	{
-		Insert(tree, 2 + rand() % 57);
+		Insert(tree, 2 + rand() % 5700);
 	}
 
 	int max = INT_MIN;
@@ -84,7 +83,7 @@ void TreeCriticalTest(){
 	Foreach(tree -> root, NULL, &max);
 	Foreach(tree -> root, cmp, NULL);
 
-
+	DeAVL_Tree(tree);
 
 }
 
@@ -92,8 +91,8 @@ int main(int argc, char const *argv[])
 {
 
 	TreeTest();
-	//TreeCriticalTest();
-	printf("Complite\n");
+	TreeCriticalTest();
+	printf("Complete\n");
 
 	return 0;
 }

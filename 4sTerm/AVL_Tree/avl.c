@@ -2,17 +2,11 @@
 #include "tree.h"
 
 
-int cmp (Node* cur_node, int elem, void *data){
-	int max = *(int*)data;
-	if (max < cur_node -> value){
-		*(int*)data = cur_node -> value;
-	}
-	return max;
-}
+
 
 void TreeTest(){
 
-	AVL_Tree* tree = ConAVL_Tree();
+	AVL_Tree_t* tree = ConAVL_Tree();
 	for (int i = 0; i < 50; ++i)
 	{
 		Insert(tree, (i*18397) % 57);
@@ -32,7 +26,7 @@ void TreeTest(){
 	}
 
 	int max = INT_MIN;
-	Foreach(tree -> root, cmp, &max);
+	Foreach(tree, cmp, &max);
 	
 	Diigraph(tree, "tree52.dot");
 	DeAVL_Tree(tree);
@@ -41,7 +35,7 @@ void TreeTest(){
 
 void TreeCriticalTest(){
 
-	AVL_Tree* tree = ConAVL_Tree();
+	AVL_Tree_t* tree = ConAVL_Tree();
 
 	for (int i = 0; i < 50; ++i)
 	{
@@ -54,7 +48,7 @@ void TreeCriticalTest(){
 	}
 
 
-	for (int i = 100; i > 50; --i)
+	for (int i = MAX_AVL_SIZE+2; i >= 0; --i)
 	{
 		Insert(tree, i);
 	}
@@ -65,10 +59,7 @@ void TreeCriticalTest(){
 	Insert(NULL, 1);
 	Insert(tree, INT_MAX / 2);
 
-	tree -> size = MAX_AVL_SIZE;
-	Insert(tree, 60);
 	Is_elem_here(NULL, 60);
-
 
 
 	Delete(NULL, 0);
@@ -80,8 +71,8 @@ void TreeCriticalTest(){
 
 	int max = INT_MIN;
 	Foreach(NULL, cmp, &max);
-	Foreach(tree -> root, NULL, &max);
-	Foreach(tree -> root, cmp, NULL);
+	Foreach(tree, NULL, &max);
+	Foreach(tree, cmp, NULL);
 
 	DeAVL_Tree(tree);
 

@@ -4,17 +4,15 @@
 
 #include "types.h"
 
-int Insert(AVL_Tree* tree, Elem_t Elem);
-int Delete(AVL_Tree* tree, Elem_t Elem);
-char Is_elem_here(AVL_Tree* tree, Elem_t elem);
-int Foreach(Node* root, int(*callback)(Node* cur_node, Elem_t elem, void *data), void* data);
+int Insert(AVL_Tree_t* tree, Elem_t Elem);
+int Delete(AVL_Tree_t* tree, Elem_t Elem);
+char Is_elem_here(AVL_Tree_t* tree, Elem_t elem);
+int Foreach(AVL_Tree_t* tree, int(*callback)(Node_t* cur_node, Elem_t elem, void *data), void* data);
+int cmp (Node_t* cur_node, int elem, void *data);
+void Diigraph (AVL_Tree_t* tree, const char* name);
 
-void Diigraph (AVL_Tree* tree, const char* name);
-
-AVL_Tree* ConAVL_Tree();
-void DeAVL_Tree(AVL_Tree* tree);
-
-int Compare_int(int left, int right);
+AVL_Tree_t* ConAVL_Tree();
+void DeAVL_Tree(AVL_Tree_t* tree);
 
 extern int (*Compare_function)(Elem_t Elem1, Elem_t Elem2);
 

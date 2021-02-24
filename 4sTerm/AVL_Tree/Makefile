@@ -3,7 +3,7 @@ CFLAGS = -MD -g --coverage
 
 all: a.out 
 
-a.out: avl.o diigraph.o tree.o
+a.out: avl.o tree.o
 	$(CC) $^  $(CFLAGS) -o $@ 
 
 %.o: %.c
@@ -22,3 +22,6 @@ st:
 	./a.out
 
 -include *.d
+
+
+.PHONY: clean all coverage

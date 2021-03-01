@@ -9,10 +9,10 @@ int Delete(AVL_Tree_t* tree, Elem_t Elem);
 char Is_elem_here(AVL_Tree_t* tree, Elem_t elem);
 int Foreach(AVL_Tree_t* tree, int(*callback)(Node_t* cur_node, Elem_t elem, void *data), void* data);
 int cmp (Node_t* cur_node, int elem, void *data);
-void Diigraph (AVL_Tree_t* tree, const char* name);
+int Diigraph (AVL_Tree_t* tree, const char* name);
 
 AVL_Tree_t* ConAVL_Tree();
-void DeAVL_Tree(AVL_Tree_t* tree);
+int DeAVL_Tree(AVL_Tree_t* tree);
 
 extern int (*Compare_function)(Elem_t Elem1, Elem_t Elem2);
 

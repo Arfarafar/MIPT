@@ -3,7 +3,7 @@ CFLAGS = -MD -g --coverage
 
 all: a.out 
 
-a.out: avl.o tree.o
+a.out: test.o tree.o
 	$(CC) $^  $(CFLAGS) -o $@ 
 
 %.o: %.c

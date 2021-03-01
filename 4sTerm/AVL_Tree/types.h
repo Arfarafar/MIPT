@@ -3,7 +3,6 @@
 enum errors{
     NORMAL_STATE = 0,
     IMPOSSIBLE_TO_INSERT,
-    INVALID_TREE,
     TREE_IS_FULL,
     EMPTY,
     NO_SUCH_ELEMENT,

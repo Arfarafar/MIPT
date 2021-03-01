@@ -71,7 +71,7 @@ AVL_Tree_t* ConAVL_Tree(){
     if(tree)
     {
         tree -> root = NULL;  
-        tree -> size = 1;
+        tree -> size = 0;
     }
 
     return tree;
@@ -93,14 +93,15 @@ static void Destruct_Node(Node_t* node_t){
 
 
 
-void DeAVL_Tree(AVL_Tree_t* tree){
+int DeAVL_Tree(AVL_Tree_t* tree){
 
     if(!tree){
-        return;
+        return NO_TREE;
     }
 
     Destruct_Node(tree -> root);
     free(tree);
+    return NORMAL_STATE;
 }
 
 
@@ -123,7 +124,7 @@ static int Foreach_Node(Node_t* root, int(*callback)(Node_t* cur_node, Elem_t el
     if(root -> link[1])
         Foreach_Node(root -> link[1], callback, data);
 
-    return 0;
+    return NORMAL_STATE;
 }
 
 
@@ -148,6 +149,8 @@ char Is_elem_here(AVL_Tree_t* tree, Elem_t elem){
 
     if(!tree)
         return 0;
+    if (!(tree -> root))
+        return 0;
 
     int side = 0;
 
@@ -156,6 +159,7 @@ char Is_elem_here(AVL_Tree_t* tree, Elem_t elem){
          if (cmp == 0){
             return 1;
         }
+        side = cmp > 0;
     }
 
     return 0;
@@ -267,7 +271,7 @@ static Node_t* Right_at_x_Left_at_y (Node_t* X, Node_t* cur_node, int dir){
 int Insert(AVL_Tree_t* tree, Elem_t Elem){
 
     if(!tree)
-        return INVALID_TREE;
+        return NO_TREE;
     if(tree -> size == MAX_AVL_SIZE){
         return TREE_IS_FULL;
     }
@@ -286,6 +290,7 @@ int Insert(AVL_Tree_t* tree, Elem_t Elem){
     if (!tree -> root){
         if(!(tree -> root = Create_Node(Elem)))
             return IMPOSSIBLE_TO_INSERT;
+        tree -> size ++;
         return 0;
     }
     else if (!final) 
@@ -344,8 +349,7 @@ int Insert(AVL_Tree_t* tree, Elem_t Elem){
 }
 
 
-static int Rebalance(int sign, Node_t* cur_node, Node_t** root)
-{
+static int Rebalance(int sign, Node_t* cur_node, Node_t** root){
             cur_node -> balance += sign;
 
             int dir = sign == 1;
@@ -381,14 +385,14 @@ static int Rebalance(int sign, Node_t* cur_node, Node_t** root)
             }
             return 0;
 
-        }
+}
 
 
 
 int Delete(AVL_Tree_t* tree, Elem_t Elem){
 
     if (!tree)
-        return INVALID_TREE;
+        return NO_TREE;
 
     Node_t* path[MAX_AVL_height];
     char dir[MAX_AVL_height];
@@ -524,10 +528,10 @@ static void Print_tree(FILE* flout, Node_t* cur_node, int level){
 
 
 
-void Diigraph(AVL_Tree_t* tree, const char* name){
+int Diigraph(AVL_Tree_t* tree, const char* name){
 
     if(!tree){
-        return;
+        return NO_TREE;
     }
 
     FILE* flin = fopen(name, "wt");
@@ -535,9 +539,12 @@ void Diigraph(AVL_Tree_t* tree, const char* name){
                   "rankdir=TB;\n"
                   "node[color=\"goldenrod\",fontsize=13];\n");
     Print_tree(flin, tree -> root, 1);
+    fprintf(flin, "\"%p\"[shape=\"rectangle\", style=\"filled\", fillcolor=\"#EFEFEF\", label = \"", tree);
+    fprintf(flin,"%d %d \" ];\n", tree -> size, MAX_AVL_SIZE);
     fprintf(flin, " }\n");
     fclose(flin);
     
+    return NORMAL_STATE;
 
 }
 

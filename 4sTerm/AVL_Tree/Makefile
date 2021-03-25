@@ -10,10 +10,11 @@ a.out: test.o tree.o
 	$(CC) $< -c  $(CFLAGS) -o $@ 
 
 clean: 
-	rm -rf a.out *.o *.d *.dot *.gcno *.gcda *.info
+	rm -rf a.out *.o *.d *.dot *.gcno *.gcda *.info report
 
 coverage: test.info
 	genhtml -o report $<
+	google-chrome report/index.html
 
 test.info: st
 	lcov -o test.info -c -d .

@@ -105,13 +105,12 @@ int DeAVL_Tree(AVL_Tree_t* tree){
 }
 
 
-int cmp (Node_t* cur_node, int elem, void *data){
-    int max = *(int*)data;
-    if (max < cur_node -> value){
-        *(int*)data = cur_node -> value;
-    }
-    return max;
+Elem_t Get_value(Node_t* node){
+    if (!node)
+        return POISON_VALUE;
+    return node -> value;
 }
+
 
 
 static int Foreach_Node(Node_t* root, int(*callback)(Node_t* cur_node, Elem_t elem, void *data), void* data){

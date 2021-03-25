@@ -13,6 +13,7 @@ enum errors{
 
 typedef int Elem_t;
 #define Elem_t_print "%d"
+#define POISON_VALUE -666
 
 extern const int MAX_AVL_height;
 extern const int MAX_AVL_SIZE;

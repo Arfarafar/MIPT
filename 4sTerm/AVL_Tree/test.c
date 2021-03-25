@@ -3,6 +3,13 @@
 #include "assert.h"
 
 
+int cmp (Node_t* cur_node, int elem, void *data){
+    int max = *(int*)data;
+    if (max < Get_value(cur_node)){
+        *(int*)data = Get_value(cur_node);
+    }
+    return max;
+}
 
 
 void TreeTest(){
@@ -87,7 +94,7 @@ void TreeCriticalTest(){
 
 }
 
-int main()
+int main() 
 {
 
 	TreeTest();

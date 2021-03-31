@@ -18,8 +18,8 @@
 #define MAX_PATHLEN 128
 
 long requredThread = 0;
-const double UPPER_LIMIT = 10000.0;
-const double LOWER_LIMIT = 0.0;
+const double UPPER_LIMIT = 4000.0;
+const double LOWER_LIMIT = -4000.0;
 const double accuracy = 0.00001;
 
 
@@ -33,15 +33,13 @@ struct
 {
 	core_t cores[MAX_CORE];
 	int size;
-	//int last_notfillied;
+	
 } CORES = {};
 
 
 
-
-
 static inline double func (double x){
-	return x;//sqrt(abs(x));
+	return sin(x);
 }
 
 void integral(double* dest, long int threadnum){
@@ -66,6 +64,10 @@ void setAffinity (long int threadnum){
 
 void* routine(void* threadnum){
 	
+	if ((long int)threadnum >= requredThread){
+		return NULL;
+	}
+
 	setAffinity((long int)threadnum);
 
 	double* mpage = (double*)memalign(4096, 4096);
@@ -147,14 +149,15 @@ int main(int argc, char* argv[]){
 
 	char* extstr;
 	requredThread = strtol(argv[1], &extstr, 0);
+	int realthread = CORES.size > requredThread ? CORES.size : requredThread;
 
-	setAffinity(requredThread - 1);
+	setAffinity(0);
 
-	pthread_t* id = (pthread_t*)malloc((requredThread-1)* sizeof(pthread_t));
+	pthread_t* id = (pthread_t*)malloc((realthread - 1)* sizeof(pthread_t));
 
-	for(long int i = 0; i < requredThread - 1; i++){
+	for(long int i = 1; i < realthread ; i++){
 
-		if(!pthread_create(id+i, NULL , routine, (void*)i)){
+		if(!pthread_create((id+i-1), NULL , routine, (void*)i)){
 			
 		}
 
@@ -164,12 +167,20 @@ int main(int argc, char* argv[]){
 
 	}
 	double sum = 0;
-	integral(&sum, requredThread-1);
+	integral(&sum, 0);
 
-	for(int i = 0; i < requredThread-1; i++){
+	for(int i = 1; i < requredThread; i++){
 		double* part = NULL;
-		pthread_join(*(id+i), (void**) &part);
+		
+		pthread_join(*(id+i-1), (void**) &part);
+
 		sum += *part;
+	}
+
+	for (int i = requredThread; i < realthread; ++i)
+	{
+		
+		pthread_join(*(id+i-1), NULL);
 	}
 
 	free(id);

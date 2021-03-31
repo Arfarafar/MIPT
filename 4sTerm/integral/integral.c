@@ -39,7 +39,7 @@ struct
 
 
 static inline double func (double x){
-	return sin(x);
+	return sqrt(x);
 }
 
 void integral(double* dest, long int threadnum){
@@ -163,6 +163,7 @@ int main(int argc, char* argv[]){
 
 		else{
 			printf("Failure to start a thread number %ld\n", i);
+			return 0;
 		}
 
 	}

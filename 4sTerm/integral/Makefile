@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -MD -g -pthread -lm
+CFLAGS = -MD -g -pthread -lm -std=c99
 
 all: a.out 
 

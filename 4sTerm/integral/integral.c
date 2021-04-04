@@ -18,8 +18,8 @@
 #define MAX_PATHLEN 128
 
 long requredThread = 0;
-const double UPPER_LIMIT = 4000.0;
-const double LOWER_LIMIT = -4000.0;
+const double UPPER_LIMIT = 15000.0;
+const double LOWER_LIMIT = 0.0;
 const double accuracy = 0.00001;
 
 
@@ -42,7 +42,7 @@ static inline double func (double x){
 	return sqrt(x);
 }
 
-void integral(double* dest, long int threadnum){
+void integral(double* dest, long threadnum){
 
 	*dest = 0.0;
 	double delta  = (UPPER_LIMIT - LOWER_LIMIT) / requredThread;
@@ -55,7 +55,7 @@ void integral(double* dest, long int threadnum){
 
 }
 
-void setAffinity (long int threadnum){
+void setAffinity (long threadnum){
 	cpu_set_t set;
 	CPU_ZERO(&set);
 	CPU_SET((CORES.cores[threadnum % CORES.size].cpuX[threadnum / CORES.size % 2]) , &set);
@@ -64,18 +64,15 @@ void setAffinity (long int threadnum){
 
 void* routine(void* threadnum){
 	
-	if ((long int)threadnum >= requredThread){
-		return NULL;
-	}
 
-	setAffinity((long int)threadnum);
+	setAffinity((long)threadnum);
 
 	double* mpage = (double*)memalign(4096, 4096);
-	mlock(mpage, 4096);
+	//mlock(mpage, 4096);
 
-	integral(mpage, (long int)threadnum);
+	integral(mpage, (long)threadnum);
 	
-	munlock(mpage, 4096);
+	//munlock(mpage, 4096);
 	return mpage;
 }
 
@@ -151,38 +148,51 @@ int main(int argc, char* argv[]){
 	requredThread = strtol(argv[1], &extstr, 0);
 	int realthread = CORES.size > requredThread ? CORES.size : requredThread;
 
-	setAffinity(0);
+	//setAffinity(0);
 
-	pthread_t* id = (pthread_t*)malloc((realthread - 1)* sizeof(pthread_t));
+	pthread_t* id = (pthread_t*)malloc((realthread)* sizeof(pthread_t));
 
-	for(long int i = 1; i < realthread ; i++){
+	for(long i = 0; i < requredThread ; i++){
 
-		if(!pthread_create((id+i-1), NULL , routine, (void*)i)){
+		if(!pthread_create(id+i, NULL , routine, (void*)i)){
 			
 		}
 
 		else{
-			printf("Failure to start a thread number %ld\n", i);
+			printf("Failure to start a thread number %ld\n program interrupted", i);
+			for (int g = 0; g < i; ++g)
+			{
+				pthread_detach(*(id+g));
+			}
 			return 0;
 		}
 
 	}
-	double sum = 0;
-	integral(&sum, 0);
 
-	for(int i = 1; i < requredThread; i++){
+	for(long i = requredThread; i < realthread ; i++){
+
+		if(!pthread_create(id+i, NULL , routine, (void*)i)){
+			pthread_detach(*(id+i));
+		}
+
+		else{
+			printf("Failure to start a thread number %ld\n", i);
+			//return 0;
+		}
+
+	}
+
+	double sum = 0;
+	//integral(&sum, 0);
+
+	for(int i = 0; i < requredThread; i++){
 		double* part = NULL;
 		
-		pthread_join(*(id+i-1), (void**) &part);
+		pthread_join(*(id+i), (void**) &part);
 
 		sum += *part;
 	}
 
-	for (int i = requredThread; i < realthread; ++i)
-	{
-		
-		pthread_join(*(id+i-1), NULL);
-	}
 
 	free(id);
 	printf("%f\n", sum);

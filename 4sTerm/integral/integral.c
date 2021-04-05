@@ -18,6 +18,7 @@
 #define MAX_PATHLEN 128
 
 long requredThread = 0;
+long realthread = 0;
 const double UPPER_LIMIT = 30000.0;
 const double LOWER_LIMIT = 0.0;
 const double accuracy = 0.00001;
@@ -58,9 +59,7 @@ void integral(double* dest, long threadnum){
 void setAffinity (long threadnum){
 	cpu_set_t set;
 	CPU_ZERO(&set);
-	int thread = CORES.cores[threadnum % CORES.size].cpuX[threadnum / CORES.size % 2];
-	CPU_SET(thread , &set);
-	printf("Прицепился к %d", thread);
+	CPU_SET(CORES.cores[threadnum % CORES.size].cpuX[threadnum / CORES.size % 2], &set);
 	sched_setaffinity(0, sizeof(cpu_set_t), &set);
 }
 
@@ -93,7 +92,7 @@ void Parse_topology(){
 		if (argc == 1){
 			end = begin;
 		}
-
+		realthread += begin - end + 1;
 		for (int cpu_n = begin; cpu_n <= end; ++cpu_n){
 
 			sprintf((path+baselen), TOPOLOGY_PATH_CpuX_coreID, cpu_n);
@@ -148,7 +147,7 @@ int main(int argc, char* argv[]){
 
 	char* extstr;
 	requredThread = strtol(argv[1], &extstr, 0);
-	int realthread = CORES.size > requredThread ? CORES.size : requredThread;
+	realthread = realthread > requredThread ? realthread : requredThread;
 
 	//setAffinity(0);
 

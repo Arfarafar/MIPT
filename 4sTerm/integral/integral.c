@@ -58,7 +58,9 @@ void integral(double* dest, long threadnum){
 void setAffinity (long threadnum){
 	cpu_set_t set;
 	CPU_ZERO(&set);
-	CPU_SET((CORES.cores[threadnum % CORES.size].cpuX[threadnum / CORES.size % 2]) , &set);
+	int thread = CORES.cores[threadnum % CORES.size].cpuX[threadnum / CORES.size % 2];
+	CPU_SET(thread , &set);
+	printf("Прицепился к %d", thread);
 	sched_setaffinity(0, sizeof(cpu_set_t), &set);
 }
 

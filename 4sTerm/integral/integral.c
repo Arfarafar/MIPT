@@ -18,8 +18,7 @@
 #define MAX_PATHLEN 128
 
 long requredThread = 0;
-long realthread = 0;
-const double UPPER_LIMIT = 30000.0;
+const double UPPER_LIMIT = 5000.0;
 const double LOWER_LIMIT = 0.0;
 const double accuracy = 0.00001;
 
@@ -79,7 +78,7 @@ void* routine(void* threadnum){
 
 
 
-void Parse_topology(){
+void Parse_topology(int *realthread){
 
 	FILE* flin = fopen(TOPOLOGY_PATH_ONLINE, "rt");
 
@@ -92,7 +91,7 @@ void Parse_topology(){
 		if (argc == 1){
 			end = begin;
 		}
-		realthread += begin - end + 1;
+		*realthread += end - begin + 1;
 		for (int cpu_n = begin; cpu_n <= end; ++cpu_n){
 
 			sprintf((path+baselen), TOPOLOGY_PATH_CpuX_coreID, cpu_n);
@@ -127,7 +126,7 @@ void checkTopology(){
 
 	for (int i = 0; i < CORES.size; i++){
 		printf("core_id %d, cpu0 %d, cpu1 %d\n", CORES.cores[i].core_id, CORES.cores[i].cpuX[0],
-										CORES.cores[i].cpuX[1]);
+														CORES.cores[i].cpuX[1]);
 	}
 
 }
@@ -140,15 +139,16 @@ int main(int argc, char* argv[]){
 		return 1;
 	}
 
-	
-	Parse_topology();
+	int realthread = 0;
+	Parse_topology(&realthread);
 
 	//checkTopology();
 
 	char* extstr;
 	requredThread = strtol(argv[1], &extstr, 0);
+	
 	realthread = realthread > requredThread ? realthread : requredThread;
-
+	
 	//setAffinity(0);
 
 	pthread_t* id = (pthread_t*)malloc((realthread)* sizeof(pthread_t));
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
 		}
 
 		else{
-			printf("Failure to start a thread number %ld\n program interrupted", i);
+			printf("Failure to start a thread number %ld\n interrupt", i);
 			for (int g = 0; g < i; ++g)
 			{
 				pthread_detach(*(id+g));
@@ -174,11 +174,6 @@ int main(int argc, char* argv[]){
 
 		if(!pthread_create(id+i, NULL , routine, (void*)i)){
 			pthread_detach(*(id+i));
-		}
-
-		else{
-			printf("Failure to start a thread number %ld\n", i);
-			//return 0;
 		}
 
 	}

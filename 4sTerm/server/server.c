@@ -10,49 +10,48 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
+
 
 
 #define HOST_TCP_PORT 50000
 #define CLIENT_UDP_PORT 50001
 
 
-const double UPPER_LIMIT = 10000.0;
+const double UPPER_LIMIT = 17000.0;
 const double LOWER_LIMIT = 0.0;
 
 
 struct {
     double start;
     double end;
-    double accuracy = 0.00001;
+    double accuracy;
 }  computing_task;
 
 
 typedef struct {
 	int fd;
 	long rThr;
+	int read;
 } client_t;
 
 
 void send_Broadcast(){
 
 	int broadcast_trans = socket(AF_INET, SOCK_DGRAM, 0);
-	struct sockaddr_in dest_addr = {.sin_family = AF_INET;
-									.sin_port = htons(CLIENT_UDP_PORT);
-									.sin_addr = htonl(INADDR_BROADCAST);
+	struct sockaddr_in dest_addr = {.sin_family = AF_INET,
+									.sin_port = htons(CLIENT_UDP_PORT),
+									.sin_addr = htonl(INADDR_BROADCAST)
 									};
     int enable = 1;
     setsockopt(broadcast_trans, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable));
-	sentto (broadcast_trans, NULL, 0, 0, (struct sockaddr*) &dest_addr, sizeof(dest_addr));
+	sendto (broadcast_trans, NULL, 0, 0, (struct sockaddr*) &dest_addr, sizeof(dest_addr));
 	close(broadcast_trans);
 
 }
 
-void Enable_options (int server)
+void Enable_keepalive (int server)
 {
-	/*
-	int enable = 1;
-	setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
-	*/
 
 	int seconds = 9;
 	setsockopt(server, IPPROTO_TCP, TCP_KEEPIDLE, &seconds, sizeof(int));
@@ -70,14 +69,17 @@ int Create_server_socket(){
 
 	int server =  socket(AF_INET, SOCK_STREAM, 0);
 
-	struct sockaddr_in bind_addr = {.sin_family = AF_INET;
-									.sin_port = htons(HOST_TCP_PORT);
-									.sin_addr = htonl(INADDR_ANY);
+	int enable = 1;
+	setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+
+	struct sockaddr_in bind_addr = {.sin_family = AF_INET,
+									.sin_port = htons(HOST_TCP_PORT),
+									.sin_addr = htonl(INADDR_ANY)
 									};
 
 	bind(server, (struct sockaddr*) &bind_addr, sizeof(bind_addr));
 
-	//Enable_options(server);
+	Enable_keepalive(server);
 
 	listen(server, SOMAXCONN);
 
@@ -85,7 +87,7 @@ int Create_server_socket(){
 }
 
 
-int accept_clients(int server, int* clients, int* allThreads, int requredclients){
+int accept_clients(int server, client_t* clients, int* allThreads, int requiredclients){
 
 	struct timeval waiting_time = {
         .tv_sec = 0,
@@ -120,8 +122,9 @@ int accept_clients(int server, int* clients, int* allThreads, int requredclients
         			return -1;
         		*allThreads += tmp;
         		clients[i].rThr = tmp;
+
         		rd++;
-        		if(rd == requredclients){
+        		if(rd == requiredclients){
         			return 0;
         		}
         	}
@@ -129,11 +132,12 @@ int accept_clients(int server, int* clients, int* allThreads, int requredclients
 
         if (FD_ISSET(server, &read_fds)){
         	clients[ald_acpt].fd = accept4(server, NULL, 0, SOCK_NONBLOCK);
+        	clients[ald_acpt].read = 0;
 
-        	//int enable = 1;
-        	//setsockopt(clients[ald_acpt].fd, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(int))
+        	int enable = 1;
+        	setsockopt(clients[ald_acpt].fd, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(int));
 
-        	ald_acpt = ald_acpt == requredclients ? ald_acpt : ald_acpt+1 ;
+        	ald_acpt = ald_acpt == requiredclients ? ald_acpt : ald_acpt+1 ;
         }
 
         waiting_time.tv_usec = 1000000;
@@ -141,13 +145,15 @@ int accept_clients(int server, int* clients, int* allThreads, int requredclients
 
 }
 
-int write_tasks(int* clients, int allThreads, int requredclients){
+int write_tasks(client_t* clients, int allThreads, int requiredclients){
 
 
 	double delta  = (UPPER_LIMIT - LOWER_LIMIT) / allThreads;
-	int thr_passed = 0
+	int thr_passed = 0;
 
-	for(int i = 0; i < requredclients; ++i){
+	computing_task.accuracy = 0.00001;
+
+	for(int i = 0; i < requiredclients; ++i){
 
 		computing_task.start = LOWER_LIMIT + delta * thr_passed;
 		computing_task.end = computing_task.start + delta * clients[i].rThr;
@@ -161,21 +167,24 @@ int write_tasks(int* clients, int allThreads, int requredclients){
 	
 }
 
-int receive_results (int* clients, int allThreads, double* sum){
+int receive_results (client_t* clients, int requiredclients, int allThreads, double* sum){
 
 	int rd = 0;
+
+    fd_set read_fds;
 
 	for(;;){
 		
         FD_ZERO(&read_fds);
         
-        for (int i = 0; i < allThreads; ++i)
+        for (int i = 0; i < requiredclients; ++i)
         {
-        	FD_SET(clients[i].fd, &read_fds);
+        	if(!clients[i].read)
+        		FD_SET(clients[i].fd, &read_fds);
         }
 
          
-        if (select(FD_SETSIZE, &read_fds, NULL, NULL, &waiting_time) <= 0)
+        if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) <= 0)
             return -1;
 
 
@@ -185,9 +194,10 @@ int receive_results (int* clients, int allThreads, double* sum){
         		double tmp;
         		if (read(clients[i].fd, &tmp, sizeof(double)) != sizeof(double))
         			return -1;
+        		clients[i].read = 1;
         		*sum += tmp;
         		rd++;
-        		if(rd == requredclients){
+        		if(rd == requiredclients){
         			return 0;
         		}
         	}
@@ -212,25 +222,25 @@ int main(int argc, char* argv[]){
 	int server = Create_server_socket();
 
 	char* extstr;
-	long requredclients = strtol(argv[1], &extstr, 0);
+	long requiredclients = strtol(argv[1], &extstr, 0);
 
 
-    client_t* clients = (client_t*)malloc(requredclients * sizeof(client_t));
+    client_t* clients = (client_t*)malloc(requiredclients * sizeof(client_t));
     int allThreads;
    
-	if (accept_clients(server, clients, &allThreads, requredclients) == -1){
+	if (accept_clients(server, clients, &allThreads, requiredclients) == -1){
 		printf("Not all clients are accepted\n");
 		return 1;
 	}
 
-	if (write_tasks(clients, allThreads, requredclients) == -1){
+	if (write_tasks(clients, allThreads, requiredclients) == -1){
 		printf("Not all tasks are given\n");
 		return 1;
 	}
 
 	double sum;
 
-	if (receive_results(clients, requredclients, &sum) == -1){
+	if (receive_results(clients, requiredclients, allThreads, &sum) == -1){
 		printf("Not all results are received\n");
 		return 1;
 	}

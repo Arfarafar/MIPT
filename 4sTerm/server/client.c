@@ -211,9 +211,13 @@ int main(int argc, char* argv[]){
 	struct sockaddr_in src_addr;
 	int addrlen = sizeof(src_addr);
 
-	struct sockaddr_in bind_addr = {.sin_family = AF_INET;
-									.sin_port = htons(CLIENT_UDP_PORT);
-									.sin_addr = htonl(INADDR_ANY);
+	int enable = 1;
+	setsockopt(broadcast_receiver, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+	
+
+	struct sockaddr_in bind_addr = {.sin_family = AF_INET,
+									.sin_port = htons(CLIENT_UDP_PORT),
+									.sin_addr = htonl(INADDR_ANY)
 									};
 	bind(broadcast_receiver, (struct sockaddr*) &bind_addr, sizeof(bind_addr));
 	recvfrom(broadcast_receiver, buf, MAX_PATHLEN, 0, (struct sockaddr*) &src_addr, &addrlen);

@@ -18,9 +18,9 @@
 #define MAX_PATHLEN 128
 
 long requredThread = 0;
-const double UPPER_LIMIT = 5000.0;
-const double LOWER_LIMIT = 0.0;
-const double accuracy = 0.00001;
+const double UPPER_LIMIT = 5.0;
+const double LOWER_LIMIT = -1.0;
+const double accuracy = 0.0000001;
 
 
 typedef struct
@@ -39,14 +39,14 @@ struct
 
 
 static inline double func (double x){
-	return sqrt(x) - x/120;
+	return x*x;
 }
 
 void integral(double* dest, long threadnum){
 
 	*dest = 0.0;
 	double delta  = (UPPER_LIMIT - LOWER_LIMIT) / requredThread;
-	double a = delta * threadnum;
+	double a = LOWER_LIMIT + delta * threadnum;
 	double b = a + delta;
 
 	for (double x = a; x < b; x += accuracy){

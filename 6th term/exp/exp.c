@@ -14,19 +14,20 @@ int main(int argc, char *argv[]) {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
         
-        long ibeg = rank * N / size;
-        long iend = (rank + 1) * N / size;
+        long ibeg = rank * ((N - 1) / (size) + 1);
+        long iend = (rank + 1) * ((N - 1) / (size) + 1);
 
         
         long long factorial = 1;
         long double result = 0;
 
         long i;
-        for (i = ibeg == 0 ? 1 : ibeg; i < iend; i++) {
+        for (i = ibeg == 0 ? 1 : ibeg; i < ((iend > N) ? N : iend); i++) {
               
                 factorial *= i;
                 result += (1.0 / (long double)(factorial));
         }
+       
        
 
         

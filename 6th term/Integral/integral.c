@@ -19,10 +19,10 @@
 
 long requredThread = 0;
 
-const double LOWER_LIMIT = 0.001;
-const double UPPER_LIMIT = 5.0;
+const double LOWER_LIMIT = 0.0001;
+const double UPPER_LIMIT = 10.0;
 
-const double FStopsNum = 10000;
+const int FStopsNum = 100000000;
 
 
 typedef struct
@@ -52,7 +52,7 @@ void integral(double* dest, long threadnum){
 	double a = 1/a1;
 	double b = 1 / (a1 - delta);
 
-	accuracy = (b - a) / FStopsNum;
+	double accuracy = (b - a) * requredThread / FStopsNum;
 
 	for (double x = a; x < b; x += accuracy){
 		*dest += func(x)*accuracy;

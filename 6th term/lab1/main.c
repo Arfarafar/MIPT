@@ -285,6 +285,21 @@ int main(int argc, char * argv[])
         fprintf(stdout, r" count_t = %d, count_x = %d\n", rank, count_t, count_x);
         max_error(rank, res, count_x, count_t);
 
+        fp = fopen("res.mp", "w");
+
+        for(int i = 0; i < count_t; i ++)
+        {
+            for (int j = 0; j < count_x; j++)
+            {
+                fwrite((res+j*count_t+i), sizeof(double), 1, fp);
+                fputc(';', fp);
+
+            }
+            fputc('\n', fp);
+        }
+
+        
+        fclose(fp);
 
         free(res);
         free(counts);
@@ -293,6 +308,7 @@ int main(int argc, char * argv[])
 
     free(u);
     
+
 
     MPI_Finalize();
 

@@ -22,8 +22,6 @@ long requredThread = 0;
 const double LOWER_LIMIT = 0.0001;
 const double UPPER_LIMIT = 10.0;
 
-const int FStopsNum = 100000000;
-
 
 typedef struct
 {
@@ -40,22 +38,26 @@ struct
 
 
 
-static inline double func (double x){
+static inline long double func (long double x){
 	return sin(1/x);
 }
 
 void integral(double* dest, long threadnum){
 
 	*dest = 0.0;
-	double delta  = (- 1/UPPER_LIMIT + 1/LOWER_LIMIT) / requredThread; //колво периодов на поток
-	double a1 = 1/LOWER_LIMIT - delta*threadnum;
-	double a = 1/a1;
-	double b = 1 / (a1 - delta);
+	long double delta  = (- 1/UPPER_LIMIT + 1/LOWER_LIMIT) / requredThread; //колво радиан на поток
+    
+	long double a1 = 1/LOWER_LIMIT - delta*threadnum;
+    long double b1 = a1 - delta;
+	long double a = 1/a1;
+	long double b = 1 / (a1 - delta);
+    
 
-	double accuracy = (b - a) * requredThread / FStopsNum;
+	double accuracy = M_PI / 200000;
+    //printf("%lf %lf %lf\n", a, b, accuracy);
 
-	for (double x = a; x < b; x += accuracy){
-		*dest += func(x)*accuracy;
+	for (long double x = b1; x < a1; x += accuracy){
+		*dest += func(1/x)*(1/x - 1/(x+accuracy));
 	}
 
 }

@@ -285,7 +285,7 @@ int main(int argc, char * argv[])
         fprintf(stdout, r" count_t = %d, count_x = %d\n", rank, count_t, count_x);
         max_error(rank, res, count_x, count_t);
 
-        fp = fopen("res.mp", "w");
+        FILE* fp = fopen("res.mp", "w");
 
         for(int i = 0; i < count_t; i ++)
         {

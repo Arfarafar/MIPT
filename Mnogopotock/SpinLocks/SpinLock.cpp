@@ -1,6 +1,5 @@
 #include <atomic>
 #include <thread>
-//#include <assert.h>
 
 #define TREADNUM 16
 
@@ -11,7 +10,7 @@ std::atomic<unsigned int> next_ticket = {0};
 
 //------------------------------------------------------------------------------------------
 void Taslock(){
-	int expected = 0;
+	unsigned int expected = 0;
 	while (!Tas.compare_exchange_weak(expected, 1, std::memory_order_acquire)){
 		expected = 0;
 		std::this_thread::yield();
@@ -24,7 +23,7 @@ void Tasunlock(){
 //------------------------------------------------------------------------------------------
 
 void TTaslock(){
-	int expected = 0;
+	unsigned int expected = 0;
 	do {
 		expected = 0;
 		while (TTas.load(std::memory_order_relaxed)){
@@ -43,7 +42,7 @@ void Ticketlock(){
 	
 	const int ticket = next_ticket.fetch_add(1, std::memory_order_acquire);
 	while (now_serving.load(std::memory_order_relaxed) != ticket){
-		 __asm volatile("pause" :::);
+		 __asm volatile("pause" ::: "memory");
 	}
 }
 
@@ -55,10 +54,10 @@ void Ticketunlock(){
 
 
 int counter = 0;
-#define MAXCOUNT 1000000
+#define MAXCOUNT 3603600 //делится на все чичсла от 1 до 16
 
-void routine(void (*lock)(), void (*unlock)()){
-	for (int i = 0; i < MAXCOUNT; i++) {
+void routine(void (*lock)(), void (*unlock)(), int maxc){
+	for (int i = 0; i < maxc; i++) {
 		(*lock)();
 		counter++;
 		(*unlock)();
@@ -66,32 +65,51 @@ void routine(void (*lock)(), void (*unlock)()){
 }
 
 
-long calcTime(int workers, void (*lock)(), void (*unlock)()) {
-	auto start = std::chrono::high_resolution_clock::now();
-
+long measure(int workers, void (*lock)(), void (*unlock)()) {
+	counter = 0;
 	std::thread* threads[TREADNUM] = {};
-    counter = 0;
+	auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < workers; i++) {
-    	threads[i] = new std::thread(routine, lock, unlock);
+    	threads[i] = new std::thread(routine, lock, unlock, MAXCOUNT/workers);
     }
-    for (int i = 0; i < numThreads; i++) {
-        threads[i]->join();
+    for (int i = 0; i < workers; i++) {
+        threads[i] -> join();
         delete threads[i];
     }
-
 	auto end = std::chrono::high_resolution_clock::now();
+	if (counter != MAXCOUNT){
+		printf("SMTH WENT WRONG");
+	}
 	return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 }
 
 int main(int argc, char * argv[]) {
 
-	for (int i = 1; i < TREADNUM; i++){
-		long tas = calcTime(i, Taslock, Tasunlock);
-		long ttas = calcTime(i, TTaslock, TTasunlock)
-		long ticket = calcTime(i, Ticketlock, Ticketunlock)
-		printf("%d %ld\n", i, dt);
-		fflush(0);
+	FILE* ftas = fopen("tas", "w");
+	FILE* fttas = fopen("ttas", "w");
+	FILE* fticket = fopen("ticket", "w");
+
+	for (int i = 1; i <= TREADNUM; i++){
+		
+		printf("начали раунд %i\n", i);
+		long tas = measure(i, Taslock, Tasunlock);
+
+		printf("померяли tas \n");
+		long ttas = measure(i, TTaslock, TTasunlock);
+		printf("померяли ttas \n");
+
+		long ticket = measure(i, Ticketlock, Ticketunlock);
+		printf("померяли ticket \n");
+
+		fprintf(ftas,"%d %ld\n", i, tas);
+		fprintf(fttas,"%d %ld\n", i, ttas);
+		fprintf(fticket,"%d %ld\n", i, ticket);
+		printf("закончили раунд %i\n", i);
 	}
+
+	fclose(ftas);
+	fclose(fttas);
+	fclose(fticket);
 
 	return 0;
 }

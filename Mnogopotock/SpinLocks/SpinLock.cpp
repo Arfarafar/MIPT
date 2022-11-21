@@ -1,7 +1,7 @@
 #include <atomic>
 #include <thread>
 
-#define TREADNUM 16
+#define TREADNUM 15
 
 std::atomic<unsigned int> Tas = {0};
 std::atomic<unsigned int> TTas = {0};
@@ -42,7 +42,7 @@ void Ticketlock(){
 	
 	const int ticket = next_ticket.fetch_add(1, std::memory_order_acquire);
 	while (now_serving.load(std::memory_order_relaxed) != ticket){
-		 __asm volatile("pause" ::: "memory");
+		 __asm volatile("pause" :::);
 	}
 }
 
@@ -54,11 +54,16 @@ void Ticketunlock(){
 
 
 int counter = 0;
-#define MAXCOUNT 3603600 //делится на все чичсла от 1 до 16
+#define MAXCOUNT 360360 //делится на все чичсла от 1 до 15
 
 void routine(void (*lock)(), void (*unlock)(), int maxc){
 	for (int i = 0; i < maxc; i++) {
 		(*lock)();
+		for (int i = 0; i < 100; ++i)
+		{
+			void* a = malloc((i+25) * 200);
+			free(a);
+		}
 		counter++;
 		(*unlock)();
 	}

@@ -46,7 +46,7 @@ struct
 
 
 static inline double func (double x){
-	return sqrt(x) - x/120;
+	return sqrt(x) - x/1200;
 }
 
 void integral(double* dest, long threadnum){
@@ -152,22 +152,23 @@ double calculate(int realthread){
 
 		else{
 			printf("Failure to start a thread number %ld\n interrupt", i);
+
 			for (int g = 0; g < i; ++g)
 			{
 				pthread_detach(*(id+g));
 			}
-			return 0;
+			exit(1);
 		}
 
 	}
 
-	for(long i = requredThread; i < realthread ; i++){
+	/*for(long i = requredThread; i < realthread ; i++){
 
 		if(!pthread_create(id+i, NULL , routine, (void*)i)){
 			pthread_detach(*(id+i));
 		}
 
-	}
+	}*/
 
 	double sum = 0;
 

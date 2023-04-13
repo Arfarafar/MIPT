@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -11,29 +12,37 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-
+#include <errno.h>
+#include <math.h>
 
 
 #define HOST_TCP_PORT 50000
 #define CLIENT_UDP_PORT 50001
 
 
-const double UPPER_LIMIT = 17000.0;
+const double UPPER_LIMIT = 120000.0;
 const double LOWER_LIMIT = 0.0;
 
 
-struct {
+typedef struct {
     double start;
     double end;
     double accuracy;
-}  computing_task;
+}  computing_task_t;
 
 
 typedef struct {
 	int fd;
 	long rThr;
 	int read;
+	computing_task_t task;
 } client_t;
+
+
+static inline double func (double x){
+	return sqrt(x) - x/1200;
+}
+
 
 
 void send_Broadcast(){
@@ -151,15 +160,13 @@ int write_tasks(client_t* clients, int allThreads, int requiredclients){
 	double delta  = (UPPER_LIMIT - LOWER_LIMIT) / allThreads;
 	int thr_passed = 0;
 
-	computing_task.accuracy = 0.00001;
-
 	for(int i = 0; i < requiredclients; ++i){
-
-		computing_task.start = LOWER_LIMIT + delta * thr_passed;
-		computing_task.end = computing_task.start + delta * clients[i].rThr;
+		clients[i].task.accuracy = 0.00001;
+		clients[i].task.start = LOWER_LIMIT + delta * thr_passed;
+		clients[i].task.end = clients[i].task.start + delta * clients[i].rThr;
 		thr_passed +=  clients[i].rThr;
 	
-		if( write(clients[i].fd, &computing_task, sizeof (computing_task)) != sizeof (computing_task))
+		if( write(clients[i].fd, &clients[i].task, sizeof (clients[i].task)) != sizeof (clients[i].task))
 			return -1;
 	}
 
@@ -167,10 +174,12 @@ int write_tasks(client_t* clients, int allThreads, int requiredclients){
 	
 }
 
+
 int receive_results (client_t* clients, int requiredclients, int allThreads, double* sum){
 
 	int rd = 0;
-
+	int failedwork = 0;
+	int* id = (int*)malloc((requiredclients) * sizeof(int));
     fd_set read_fds;
 
 	for(;;){
@@ -183,27 +192,53 @@ int receive_results (client_t* clients, int requiredclients, int allThreads, dou
         		FD_SET(clients[i].fd, &read_fds);
         }
 
-         
-        if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) <= 0)
-            return -1;
-
-
-		for (int i = 0; i < allThreads; ++i)
-        {
-        	if(FD_ISSET(clients[i].fd, &read_fds)){
-        		double tmp;
-        		if (read(clients[i].fd, &tmp, sizeof(double)) != sizeof(double))
-        			return -1;
-        		clients[i].read = 1;
-        		*sum += tmp;
+        if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0){
+        	if (errno == EBADF){
+        		struct stat st;
+        		for (int i = 0; i < requiredclients; ++i)
+			        {
+			        	if(fstat(clients[i].fd, &st) == -1 && errno == EBADF){
+			        		clients[i].read = 1;
+			        		id[failedwork++] = i;
+			        	}
+			        }
         		rd++;
         		if(rd == requiredclients){
-        			return 0;
+        			goto out;
+        		}
+        		continue;
+        	}
+            return -1;
+        }
+
+
+		for (int i = 0; i < requiredclients; ++i)
+        {
+        	if(FD_ISSET(clients[i].fd, &read_fds)){
+        		double tmp = 0;
+        		clients[i].read = 1;
+        		rd++;
+        		if (read(clients[i].fd, &tmp, sizeof(double)) != sizeof(double))
+	        		id[failedwork++] = i;
+        		
+        		*sum += tmp;
+        		
+        		if(rd == requiredclients){
+        			goto out;
         		}
         	}
         }
         
     } 
+
+out: 
+	for(failedwork--; failedwork >= 0; failedwork--){
+		double acc = clients[id[failedwork]].task.accuracy;
+		for (double x = clients[id[failedwork]].task.start, xend = clients[id[failedwork]].task.end; x < xend; x += acc){
+			*sum += func(x)*acc;
+		}
+	}
+	return 0;
 
 }
 
